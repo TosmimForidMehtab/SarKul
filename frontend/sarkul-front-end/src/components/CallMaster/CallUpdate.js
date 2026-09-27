@@ -183,6 +183,7 @@ function CallUpdate() {
                 <option value="serviceAndClose">Service and Close</option>
                 <option value="cancelAndClose">Cancel and Close</option>
                 <option value="customerDependence">Customer dependence</option>
+                <option value="oemPending">OEM Pending</option>
               </select>
 
               <div className='form-buttons'>

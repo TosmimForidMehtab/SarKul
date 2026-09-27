@@ -293,12 +293,15 @@ function PendingCallReports() {
         <Stack alignItems={'center'} >
           {arr.map((item, key) => {
             return < CallCard
+              key={item.callId}
               callNumber={item.callId}
               customerName={item.customerName}
               date={item.createdAt}
               link={`/callmaster/call-details-specific/${item.callId}`}
               isPending={true}
               engineers={engineers}
+              problemDescription={item.problemDescription}
+              onCallUpdated={getData}
             />
             // (
             // <Link

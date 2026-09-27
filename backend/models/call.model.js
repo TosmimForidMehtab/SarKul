@@ -90,7 +90,7 @@ const callSchema = new Schema(
         },
         itemStatus: {
             type: String,
-            enum: ["required", "pending",'replace','chargeable','serviceAndClose','cancelAndClose','customerDependence'],
+            enum: ["required", "pending",'replace','chargeable','serviceAndClose','cancelAndClose','customerDependence','oemPending'],
         },
     },
     { timestamps: true }

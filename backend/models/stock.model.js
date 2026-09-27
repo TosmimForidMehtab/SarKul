@@ -36,6 +36,8 @@ const stockSchema = new Schema(
                     "CarriageBlock",
                     "AllInOne",
                     "Cable",
+                    "SSD",
+                    "TFT"
                 ],
                 message: "{VALUE} is not supported..",
             },

@@ -115,6 +115,8 @@ function BranchToEngineer() {
                                         <MenuItem value={"RAM"}>RAM</MenuItem>
                                         <MenuItem value={"CPUFan"}>CPU Fan</MenuItem>
                                         <MenuItem value={"Processor"}>Processor</MenuItem>
+                                        <MenuItem value={"SSD"}>SSD</MenuItem>
+                                        <MenuItem value={"TFT"}>TFT</MenuItem>
 
                                     </Select>
 
