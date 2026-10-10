@@ -1,70 +1,9 @@
+import { parseQueryParams, formatPaginatedResponse } from "../utils/apiFeatures.js";
 import { Engineer } from "../models/engineer.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { generateEngineerId } from "../utils/idGenerator.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-
-const createFilter = (query) => {
-    let filter = {};
-    let sort = {};
-    if (query.employeeName) {
-        filter.employeeName = { $regex: query.employeeName, $options: "i" };
-    }
-    if (query.employeeCode) {
-        filter.employeeCode = parseInt(query.employeeCode);
-    }
-    if (query.employeeDesignation) {
-        filter.employeeDesignation = {
-            $regex: query.employeeDesignation,
-            $options: "i",
-        };
-    }
-    if (query.status) {
-        filter.status = query.status;
-    }
-    if (query.resignedAt) {
-        filter.resignedAt = {
-            $gte: new Date(new Date(query.resignedAt).setUTCHours(0, 0, 0, 0)),
-            $lt: new Date(
-                new Date(query.resignedAt).setUTCHours(23, 59, 59, 999)
-            ),
-        };
-    }
-
-    if (query.salary) {
-        filter.salary = parseInt(query.salary);
-    }
-
-    if (query.sort) {
-        let sortBy = query.sort.split(",");
-        sortBy.map((item) => {
-            if (item[0] === "-") {
-                sort[item.slice(1)] = -1;
-            } else {
-                sort[item] = 1;
-            }
-        });
-        // console.log(sort);
-    }
-
-    if (query.joinDate) {
-        filter.joinDate = {
-            $gte: new Date(new Date(query.joinDate).setUTCHours(0, 0, 0, 0)),
-            $lt: new Date(
-                new Date(query.joinDate).setUTCHours(23, 59, 59, 999)
-            ),
-        };
-    }
-    if (query.employeeDOB) {
-        filter.employeeDOB = {
-            $gte: new Date(new Date(query.employeeDOB).setUTCHours(0, 0, 0, 0)),
-            $lt: new Date(
-                new Date(query.employeeDOB).setUTCHours(23, 59, 59, 999)
-            ),
-        };
-    }
-    return { filter, sort };
-};
 
 export const createEngineer = async (req, res) => {
     try {
@@ -247,37 +186,37 @@ export const getEngineer = async (req, res) => {
 
 export const getAllEngineers = async (req, res) => {
     try {
-        const { filter, sort } = createFilter(req.query);
-        if (Object.keys(sort).length === 0) {
-            sort.createdAt = -1;
-        }
+        const { filter, sort, page, limit, skip } = parseQueryParams(req.query, ["employeeName", "employeeCode", "employeeContact", "employeeEmail"]);
+        
+        const total = await Engineer.countDocuments(filter);
+        
         const engineers = await Engineer.aggregate([
             {
                 $match: filter,
             },
-            {
-                $sort: sort,
-            },
+            { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
         ]);
-        return res
-            .status(200)
-            .json(
-                new ApiResponse(
-                    200,
-                    engineers,
-                    "Engineers retrieved successfully"
-                )
-            );
+        
+        const result = formatPaginatedResponse(engineers, total, page, limit);
+        return res.status(200).json(new ApiResponse(200, result, "Engineers retrieved successfully"));
     } catch (error) {
-        return res
-            .status(error.statusCode || 500)
-            .json(
-                new ApiResponse(
-                    error.statusCode,
-                    null,
-                    error.message ||
-                    "Something went wrong while retrieving engineers"
-                )
-            );
+        return res.status(error.statusCode || 500).json(new ApiResponse(error.statusCode, null, error.message || "Something went wrong while retrieving Engineers"));
+    }
+};
+export const lookupEngineers = async (req, res) => {
+    try {
+        const query = req.query.q || "";
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const engineers = await Engineer.find({
+            $or: [
+                { employeeName: { $regex: query, $options: "i" } },
+                { employeeCode: { $regex: query, $options: "i" } }
+            ]
+        }).select("employeeName employeeCode").limit(limit);
+        return res.status(200).json(new ApiResponse(200, engineers, "Lookup successful"));
+    } catch (error) {
+        return res.status(error.statusCode || 500).json(new ApiResponse(error.statusCode, null, error.message));
     }
 };

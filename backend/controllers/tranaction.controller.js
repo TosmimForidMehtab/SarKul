@@ -1,50 +1,10 @@
+import { parseQueryParams, formatPaginatedResponse } from "../utils/apiFeatures.js";
 import { Transaction } from "../models/transaction.model.js";
 import { Stock } from "../models/stock.model.js";
 import { Call } from "../models/call.model.js";
 import { Engineer } from "../models/engineer.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
-
-const createFilter = (query) => {
-    const filter = {};
-    const sort = {};
-    if (query.callId) {
-        filter.callId = query.callId;
-    }
-    if (query.engineerName) {
-        filter.engineerName = query.engineerName;
-    }
-    if (query.itemName) {
-        filter.itemName = query.itemName;
-    }
-    if (query.stockId) {
-        filter.stockId = query.stockId;
-    }
-    if (query.partStatus) {
-        filter.partStatus = query.partStatus;
-    }
-
-    if (query.createdAt) {
-        filter.createdAt = {
-            $gte: new Date(new Date(query.createdAt).setUTCHours(0, 0, 0, 0)),
-            $lt: new Date(
-                new Date(query.createdAt).setUTCHours(23, 59, 59, 999)
-            ),
-        };
-    }
-
-    if (query.sort) {
-        const sortBy = query.sort.split(",");
-        sortBy.map((item) => {
-            if (item[0] === "-") {
-                sort[item.slice(1)] = -1;
-            } else {
-                sort[item] = 1;
-            }
-        });
-    }
-    return { filter, sort };
-};
 
 export const createTransaction = async (req, res) => {
     try {

@@ -1,9 +1,9 @@
-import express from "express";
+﻿import express from "express";
 import {
     createEngineer,
     getEngineer,
     getAllEngineers,
-    updateEngineer,
+    updateEngineer, lookupEngineers,
 } from "../controllers/engineer.controller.js";
 import {
     createEngineerValidation,
@@ -26,6 +26,7 @@ router.post(
     createEngineerValidation,
     createEngineer
 );
+router.get("/lookup", verifyToken, isAdmin, lookupEngineers);
 router.get("/", verifyToken, isAdmin, getAllEngineers);
 router.get(
     "/:employeeCode",
@@ -43,3 +44,4 @@ router.patch(
 );
 
 export default router;
+

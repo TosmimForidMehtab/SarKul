@@ -1,101 +1,8 @@
+import { parseQueryParams, formatPaginatedResponse } from "../utils/apiFeatures.js";
 import { Stock } from "../models/stock.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { generateStockId } from "../utils/idGenerator.js";
-
-const createFilter = (query) => {
-    let filter = {};
-    let sort = {};
-
-    if (query.itemName) {
-        filter.itemName = { $regex: query.itemName, $options: "i" };
-    }
-
-    if (query.itemPart) {
-        filter.itemPart = { $regex: query.itemPart, $options: "i" };
-    }
-
-    if (query.serialNumber) {
-        filter.serialNumber = { $regex: query.serialNumber, $options: "i" };
-    }
-
-    if (query.configuration) {
-        filter.configuration = { $regex: query.configuration, $options: "i" };
-    }
-
-    if (query.modelNumber) {
-        filter.modelNumber = { $regex: query.modelNumber, $options: "i" };
-    }
-
-    if (query.condition) {
-        filter.condition = query.condition;
-    }
-
-    if (query.stockId) {
-        filter.stockId = { $regex: query.stockId, $options: "i" };
-    }
-    if (query.amcStartDate) {
-        filter.amcStartDate = {
-            $gte: new Date(
-                new Date(query.amcStartDate).setUTCHours(0, 0, 0, 0)
-            ),
-            $lt: new Date(
-                new Date(query.amcStartDate).setUTCHours(23, 59, 59, 999)
-            ),
-        };
-    }
-
-    if (query.status) {
-        filter.status = query.status;
-    }
-    if (query.officeRepair) {
-        filter.officeRepair = query.officeRepair;
-    }
-    if (query.scrap) {
-        filter.scrap = query.scrap;
-    }
-    if (query.amcEndDate) {
-        filter.amcEndDate = {
-            $gte: new Date(new Date(query.amcEndDate).setUTCHours(0, 0, 0, 0)),
-            $lt: new Date(
-                new Date(query.amcEndDate).setUTCHours(23, 59, 59, 999)
-            ),
-        };
-    }
-
-    if (query.minPrice && query.maxPrice) {
-        filter.price = {
-            $gte: parseInt(query.minPrice),
-            $lte: parseInt(query.maxPrice),
-        };
-    } else if (query.minPrice) {
-        filter.price = {
-            $gte: parseInt(query.minPrice),
-        };
-    } else if (query.maxPrice) {
-        filter.price = {
-            $lte: parseInt(query.maxPrice),
-        };
-    } else if (query.price) {
-        filter.price = {
-            $eq: parseInt(query.price),
-        };
-    }
-
-    if (query.sort) {
-        let sortBy = query.sort.split(",");
-        sortBy.map((item) => {
-            if (item[0] === "-") {
-                sort[item.slice(1)] = -1;
-            } else {
-                sort[item] = 1;
-            }
-        });
-        // console.log(sort);
-    }
-
-    return { filter, sort };
-};
 
 export const createStock = async (req, res) => {
     try {
@@ -268,66 +175,20 @@ export const getStock = async (req, res) => {
 
 export const getAllStocks = async (req, res) => {
     try {
-        const { filter, sort } = createFilter(req.query);
-        if (Object.keys(sort).length === 0) {
-            sort.createdAt = -1;
-        }
-        const stocks = await Stock.aggregate([
-            {
-                $match: filter,
-            },
-            {
-                $sort: sort,
-            },
-            {
-                $project: {
-                    _id: 0,
-                    stockId: 1,
-                    itemName: 1,
-                    itemPart: 1,
-                    serialNumber: 1,
-                    configuration: 1,
-                    modelNumber: 1,
-                    amcStartDate: 1,
-                    amcEndDate: 1,
-                    price: 1,
-                    condition: 1,
-                    status: 1,
-                    officeRepair: 1,
-                    scrap: 1
-                },
-            },
-            {
-                $group: {
-                    _id: null,
-                    totalStocks: { $sum: 1 },
-                    totalPrice: { $sum: "$price" },
-                    data: { $push: "$$ROOT" },
-                },
-            },
-        ]);
-        if (!stocks) {
-            throw new ApiError(
-                404,
-                "Something went wrong while retrieving stocks"
-            );
-        }
-        return res
-            .status(200)
-            .json(
-                new ApiResponse(200, stocks, "Stocks retrieved successfully")
-            );
+        const { filter, sort, page, limit, skip } = parseQueryParams(req.query, ["stockId", "itemName", "itemPart", "serialNumber", "customerName", "category"]);
+        
+        const total = await Stock.countDocuments(filter);
+        
+        const stocks = await Stock.find(filter)
+            .sort(sort)
+            .skip(skip)
+            .limit(limit)
+            .select("-_id stockId itemName itemPart serialNumber configuration modelNumber amcStartDate amcEndDate price condition status officeRepair scrap createdAt");
+        
+        const result = formatPaginatedResponse(stocks, total, page, limit);
+        return res.status(200).json(new ApiResponse(200, result, "Stocks retrieved successfully"));
     } catch (error) {
-        return res
-            .status(error.statusCode || 500)
-            .json(
-                new ApiResponse(
-                    error.statusCode,
-                    null,
-                    error.message ||
-                    "Something went wrong while retrieving stocks"
-                )
-            );
+        return res.status(error.statusCode || 500).json(new ApiResponse(error.statusCode, null, error.message || "Something went wrong while retrieving Stocks"));
     }
 };
 
@@ -354,3 +215,20 @@ export const deleteStock = async (req, res) => {
             );
     }
 };
+export const lookupStocks = async (req, res) => {
+    try {
+        const query = req.query.q || "";
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const stocks = await Stock.find({
+            $or: [
+                { stockId: { $regex: query, $options: "i" } },
+                { itemName: { $regex: query, $options: "i" } },
+                { serialNumber: { $regex: query, $options: "i" } }
+            ]
+        }).select("stockId itemName serialNumber category").limit(limit);
+        return res.status(200).json(new ApiResponse(200, stocks, "Lookup successful"));
+    } catch (error) {
+        return res.status(error.statusCode || 500).json(new ApiResponse(error.statusCode, null, error.message));
+    }
+};
+

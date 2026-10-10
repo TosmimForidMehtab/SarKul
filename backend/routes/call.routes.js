@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import {
     createCall,
     getAllCalls,
@@ -8,7 +8,7 @@ import {
     getPendingCalls,
     getCompletedCalls,
     assignCallToEngineer,
-    closeCall,
+    closeCall, lookupCalls,
 } from "../controllers/call.controller.js";
 import {
     createCallValidation,
@@ -19,6 +19,7 @@ import {
 import { verifyToken } from "../middlewares/auth.middlewares.js";
 const router = express.Router();
 
+router.get("/lookup", verifyToken, lookupCalls);
 router.get("/closed", verifyToken, getCompletedCalls);
 router.get("/pending", verifyToken, getPendingCalls);
 router.post("/close/:callId", verifyToken, callIdValidation, closeCall);
@@ -34,3 +35,4 @@ router
 router.post("/assign", verifyToken, callAssignValidation, assignCallToEngineer);
 
 export default router;
+

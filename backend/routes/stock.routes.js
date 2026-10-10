@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import {
     createStockValidation,
     deleteStockValidation,
@@ -11,10 +11,13 @@ import {
     deleteStock,
     updateStock,
     getStock,
+    lookupStocks,
 } from "../controllers/stock.controller.js";
 import { verifyToken, isAdmin } from "../middlewares/auth.middlewares.js";
 
 const router = express.Router();
+
+router.get("/lookup", verifyToken, lookupStocks);
 
 router
     .route("/")

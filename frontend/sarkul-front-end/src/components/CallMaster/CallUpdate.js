@@ -1,4 +1,4 @@
-import { useState, React, useRef } from 'react'
+import React, { useState, useRef } from 'react';
 import SideBar from '../Sidebar/SideBar';
 import Image from '../../assets/Sarkul.png';
 import './styles.css'

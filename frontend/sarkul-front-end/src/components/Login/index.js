@@ -64,7 +64,9 @@ function Login() {
     return (
 
         <div className='login-page'>
-            <div className='header'><h2>Welcome to Sarkul Technology Private Limited</h2></div>
+            <div className='header'>
+                <h2>Welcome to Sarkul Technology Private Limited</h2>
+            </div>
             <div className='login-centre'>
                 <img className='image-login' src={Image} alt='Image here' />
                 <div className='login-slot'>

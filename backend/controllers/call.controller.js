@@ -1,60 +1,11 @@
-import { Call } from "../models/call.model.js";
+﻿import { Call } from "../models/call.model.js";
 import { Engineer } from "../models/engineer.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { generateCallId } from "../utils/idGenerator.js";
+import { parseQueryParams, formatPaginatedResponse } from "../utils/apiFeatures.js";
 
-const createFilter = (query) => {
-    let filter = {};
-    let sort = {};
-    if (query.callId) {
-        filter.callId = query.callId;
-    }
-    if (query.serialNumber) {
-        filter.serialNumber = query.serialNumber;
-    }
-    if (query.customerName) {
-        filter.customerName = query.customerName;
-    }
-    if (query.category) {
-        filter.category = query.category;
-    }
 
-    if (query.sort) {
-        let sortBy = query.sort.split(",");
-        sortBy.map((item) => {
-            if (item[0] === "-") {
-                sort[item.slice(1)] = -1;
-            } else {
-                sort[item] = 1;
-            }
-        });
-        // console.log(sort);
-    }
-
-    if (query.startDate && query.endDate) {
-        filter.createdAt = {
-            $gte: new Date(query.startDate),
-            $lte: new Date(query.endDate),
-        };
-    } else if (query.createdAt) {
-        filter.createdAt = {
-            $gte: new Date(new Date(query.createdAt).setUTCHours(0, 0, 0, 0)),
-            $lt: new Date(
-                new Date(query.createdAt).setUTCHours(23, 59, 59, 999)
-            ),
-        };
-    } else if (query.updatedAt) {
-        filter.updatedAt = {
-            $gte: new Date(new Date(query.updatedAt).setUTCHours(0, 0, 0, 0)),
-            $lt: new Date(
-                new Date(query.updatedAt).setUTCHours(23, 59, 59, 999)
-            ),
-        };
-    }
-
-    return { filter, sort };
-};
 
 export const createCall = async (req, res) => {
     try {
@@ -104,17 +55,17 @@ export const createCall = async (req, res) => {
 
 export const getAllCalls = async (req, res) => {
     try {
-        const { filter, sort } = createFilter(req.query);
-        if (Object.keys(sort).length === 0) {
-            sort.createdAt = -1;
-        }
+        const { filter, sort, page, limit, skip } = parseQueryParams(req.query, ["callId", "serialNumber", "customerName", "customerCode", "contactNumber"]);
+        
+        const total = await Call.countDocuments(filter);
+        
         const calls = await Call.aggregate([
             {
                 $match: filter,
             },
-            {
-                $sort: sort,
-            },
+            { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
             {
                 $lookup: {
                     from: "engineers",
@@ -144,20 +95,11 @@ export const getAllCalls = async (req, res) => {
                 },
             },
         ]);
-        return res
-            .status(200)
-            .json(new ApiResponse(200, calls, "Calls retrieved successfully"));
+        
+        const result = formatPaginatedResponse(calls, total, page, limit);
+        return res.status(200).json(new ApiResponse(200, result, "Calls retrieved successfully"));
     } catch (error) {
-        return res
-            .status(error.statusCode || 500)
-            .json(
-                new ApiResponse(
-                    error.statusCode,
-                    null,
-                    error.message ||
-                        "Something went wrong while retrieving calls"
-                )
-            );
+        return res.status(error.statusCode || 500).json(new ApiResponse(error.statusCode, null, error.message || "Something went wrong while retrieving Calls"));
     }
 };
 
@@ -385,5 +327,21 @@ export const closeCall = async (req, res) => {
                     error.message || "Something went wrong while closing call"
                 )
             );
+    }
+};
+export const lookupCalls = async (req, res) => {
+    try {
+        const query = req.query.q || "";
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const calls = await Call.find({
+            $or: [
+                { callId: { $regex: query, $options: "i" } },
+                { serialNumber: { $regex: query, $options: "i" } },
+                { customerName: { $regex: query, $options: "i" } }
+            ]
+        }).select("callId serialNumber customerName").limit(limit);
+        return res.status(200).json(new ApiResponse(200, calls, "Lookup successful"));
+    } catch (error) {
+        return res.status(error.statusCode || 500).json(new ApiResponse(error.statusCode, null, error.message));
     }
 };
