@@ -23,7 +23,9 @@ const CallUpdate = () => {
     const fetchCalls = async () => {
       try {
         const res = await api.get('/call?limit=100');
-        const calls = res.data.data || res.data;
+        let calls = res.data.data || res.data;
+        if (calls && !Array.isArray(calls) && Array.isArray(calls.data)) calls = calls.data;
+        if (!Array.isArray(calls)) calls = [];
         setCallOptions(calls);
 
         // Preselect if callId is in URL query

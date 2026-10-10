@@ -1,4 +1,4 @@
-﻿import { Call } from "../models/call.model.js";
+import { Call } from "../models/call.model.js";
 import { Engineer } from "../models/engineer.model.js";
 import { Stock } from "../models/stock.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -6,8 +6,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 export const getDashboardStats = async (req, res) => {
     try {
         const totalCalls = await Call.countDocuments();
-        const pendingCalls = await Call.countDocuments({ status: "Pending" });
-        const closedCalls = await Call.countDocuments({ status: "Closed" });
+        const pendingCalls = await Call.countDocuments({ status: "pending" });
+        const closedCalls = await Call.countDocuments({ status: "completed" });
         
         const totalEngineers = await Engineer.countDocuments();
         const totalStocks = await Stock.countDocuments();

@@ -20,7 +20,9 @@ const BranchToEngineer = () => {
   const fetchCalls = async (search = '') => {
     try {
       const res = await api.get(`/call/lookup?q=${search}`);
-      setCallOptions(res.data.data || []);
+      let callsData = res.data.data || res.data;
+      if (callsData && !Array.isArray(callsData) && Array.isArray(callsData.data)) callsData = callsData.data;
+      setCallOptions(Array.isArray(callsData) ? callsData : []);
     } catch (err) {
       console.error(err);
     }
@@ -29,7 +31,9 @@ const BranchToEngineer = () => {
   const fetchStocks = async (search = '') => {
     try {
       const res = await api.get(`/stock/lookup?q=${search}`);
-      setStockOptions(res.data.data || []);
+      let stockData = res.data.data || res.data;
+      if (stockData && !Array.isArray(stockData) && Array.isArray(stockData.data)) stockData = stockData.data;
+      setStockOptions(Array.isArray(stockData) ? stockData : []);
     } catch (err) {
       console.error(err);
     }

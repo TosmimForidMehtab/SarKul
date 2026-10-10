@@ -25,8 +25,14 @@ const CallAssign = () => {
           api.get('/call?status=pending&limit=100'),
           api.get('/engineer')
         ]);
-        const calls = callsRes.data.data || callsRes.data;
-        const engs = engRes.data.data || engRes.data;
+        let calls = callsRes.data.data || callsRes.data;
+        if (calls && !Array.isArray(calls) && Array.isArray(calls.data)) calls = calls.data;
+        if (!Array.isArray(calls)) calls = [];
+
+        let engs = engRes.data.data || engRes.data;
+        if (engs && !Array.isArray(engs) && Array.isArray(engs.data)) engs = engs.data;
+        if (!Array.isArray(engs)) engs = [];
+        
         setCallOptions(calls);
         setEngineerOptions(engs);
 

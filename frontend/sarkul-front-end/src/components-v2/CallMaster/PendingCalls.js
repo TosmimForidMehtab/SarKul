@@ -58,7 +58,9 @@ const PendingCalls = () => {
     const fetchEngineers = async () => {
       try {
         const res = await api.get('/engineer');
-        setEngineers(res.data.data || res.data);
+        let engData = res.data.data || res.data;
+        if (engData && !Array.isArray(engData) && Array.isArray(engData.data)) engData = engData.data;
+        setEngineers(Array.isArray(engData) ? engData : []);
       } catch (err) {
         console.error('Failed to load engineers');
       }

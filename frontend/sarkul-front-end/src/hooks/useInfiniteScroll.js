@@ -19,11 +19,21 @@ export const useInfiniteScroll = (endpoint, queryParams = {}) => {
       const res = await api.get(endpoint, { params });
       
       let newData = res.data.data || res.data;
+      if (newData && !Array.isArray(newData)) {
+          if (Array.isArray(newData.data)) {
+              newData = newData.data;
+          } else if (Array.isArray(newData.calls)) {
+              newData = newData.calls;
+          }
+      }
       if (res.data.message && Array.isArray(res.data.message) && res.data.message[0]?.data) {
           newData = res.data.message[0].data;
       }
       if (Array.isArray(newData) && newData.length === 1 && newData[0] && Array.isArray(newData[0].data)) {
         newData = newData[0].data;
+      }
+      if (!Array.isArray(newData)) {
+        newData = [];
       }
 
       const pagination = res.data.pagination;
