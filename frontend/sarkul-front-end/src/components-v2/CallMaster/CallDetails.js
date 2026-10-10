@@ -19,7 +19,7 @@ const CallDetails = () => {
     if (!query) return;
     setCallsLoading(true);
     try {
-      const res = await api.get(`/call/lookup?search=${query}`);
+      const res = await api.get(`/call/lookup?q=${query}`);
       let calls = res.data.data || res.data;
       if (calls && !Array.isArray(calls) && Array.isArray(calls.data)) calls = calls.data;
       if (!Array.isArray(calls)) calls = [];
@@ -35,7 +35,7 @@ const CallDetails = () => {
     setDetailsLoading(true);
     try {
       const res = await api.get(`/call/${callId}`);
-      setCallDetails(res.data);
+      setCallDetails(res.data.data || res.data);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to fetch call details');
     } finally {
@@ -111,7 +111,7 @@ const CallDetails = () => {
                   </Grid>
                   <Grid item xs={12}>
                     <Typography variant="subtitle2" color="text.secondary">Address</Typography>
-                    <Typography variant="body1">{callDetails.address || 'N/A'}</Typography>
+                    <Typography variant="body1">{callDetails.customerAddress || 'N/A'}</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="subtitle2" color="text.secondary">Category</Typography>
@@ -127,7 +127,7 @@ const CallDetails = () => {
                   </Grid>
                   <Grid item xs={12}>
                     <Typography variant="subtitle2" color="text.secondary">Remarks</Typography>
-                    <Typography variant="body2">{callDetails.remarks || 'No remarks provided.'}</Typography>
+                    <Typography variant="body2">{callDetails.engineerRemark || callDetails.customerRemark || 'No remarks provided.'}</Typography>
                   </Grid>
                 </Grid>
               </CardContent>
@@ -139,13 +139,13 @@ const CallDetails = () => {
               <CardContent>
                 <Typography variant="h6" color="primary" gutterBottom>Assigned Engineer</Typography>
                 <Divider sx={{ mb: 2 }} />
-                {callDetails.assignedEngineer ? (
+                {callDetails.engineersAssigned && callDetails.engineersAssigned.length > 0 ? (
                   <Box>
                     <Typography variant="subtitle2" color="text.secondary">Name</Typography>
-                    <Typography variant="body1" gutterBottom>{callDetails.assignedEngineer.name}</Typography>
+                    <Typography variant="body1" gutterBottom>{callDetails.engineersAssigned[0].employeeName}</Typography>
                     
                     <Typography variant="subtitle2" color="text.secondary">Code</Typography>
-                    <Typography variant="body1">{callDetails.assignedEngineer.code}</Typography>
+                    <Typography variant="body1">{callDetails.engineersAssigned[0].employeeCode}</Typography>
                   </Box>
                 ) : (
                   <Typography variant="body2" color="text.secondary">

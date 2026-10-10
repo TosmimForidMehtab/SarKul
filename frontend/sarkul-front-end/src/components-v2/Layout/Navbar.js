@@ -48,19 +48,6 @@ const Navbar = ({ drawerWidth }) => {
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Search Bar */}
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            backgroundColor: 'rgba(0,0,0,0.04)', 
-            borderRadius: 2, 
-            px: 2, 
-            py: 0.5 
-          }}>
-            <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
-            <InputBase placeholder="Search..." sx={{ width: 200 }} />
-          </Box>
-
           {/* UI Toggle */}
           <Chip
             label="Switch to Classic UI 🔙"
@@ -72,12 +59,6 @@ const Navbar = ({ drawerWidth }) => {
             }}
             sx={{ cursor: 'pointer', fontWeight: 'bold' }}
           />
-
-          <IconButton>
-            <NotificationsIcon />
-          </IconButton>
-          
-          <Avatar sx={{ bgcolor: 'secondary.main', width: 36, height: 36 }}>A</Avatar>
 
           <Button 
             color="error" 
