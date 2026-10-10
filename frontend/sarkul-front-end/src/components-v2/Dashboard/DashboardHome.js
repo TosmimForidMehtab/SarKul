@@ -116,7 +116,7 @@ const DashboardHome = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {recentCalls.map((row) => (
+                  {(Array.isArray(recentCalls) ? recentCalls : recentCalls?.calls || recentCalls?.data || []).map((row) => (
                     <TableRow key={row.callId || row._id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                       <TableCell component="th" scope="row" sx={{ fontWeight: 'medium' }}>
                         <Link to={`/v2/call-master/details?id=${row.callId}`} style={{ textDecoration: 'none', color: '#1a2b4a' }}>
@@ -131,7 +131,7 @@ const DashboardHome = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {recentCalls.length === 0 && (
+                  {(!recentCalls || (Array.isArray(recentCalls) ? recentCalls : recentCalls?.calls || recentCalls?.data || []).length === 0) && (
                     <TableRow>
                       <TableCell colSpan={5} align="center" sx={{ py: 3, color: 'text.secondary' }}>
                         No pending calls currently.
