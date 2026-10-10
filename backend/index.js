@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -28,6 +28,17 @@ app.use("/api/v1/mystocks", mystocksRoutes);
 app.use("/api/v1/group", groupRoutes);
 app.use("/api/v1/expense", expenseRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
+
+// Global Error Handler for production readiness
+app.use((err, req, res, next) => {
+    console.error("Unhandled Error:", err);
+    res.status(err.statusCode || 500).json({
+        statusCode: err.statusCode || 500,
+        success: false,
+        message: err.message || "Internal Server Error",
+        errors: err.errors || []
+    });
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

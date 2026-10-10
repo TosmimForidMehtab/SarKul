@@ -134,7 +134,7 @@ const PartTransactionDetail = () => {
                     <strong>Serial Number:</strong> {transaction.serialNumber || 'N/A'}
                   </Typography>
                   <Typography variant="body2" gutterBottom>
-                    <strong>Item Name:</strong> {transaction.itemName}
+                    <strong>Item Name:</strong> {transaction.itemName || 'N/A'}
                   </Typography>
                   <Typography variant="body2" gutterBottom>
                     <strong>Part Name:</strong> {transaction.partName || transaction.itemPart || 'N/A'}

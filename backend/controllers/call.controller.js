@@ -1,4 +1,4 @@
-﻿import { Call } from "../models/call.model.js";
+import { Call } from "../models/call.model.js";
 import { Engineer } from "../models/engineer.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -189,24 +189,22 @@ export const deleteCall = async (req, res) => {
 
 export const getPendingCalls = async (req, res) => {
     try {
-        const { createdAt } = req.query;
-        const query = {};
-        query.status = "pending";
-        if (createdAt) {
-            query.createdAt = {
-                $gte: new Date(createdAt).setUTCHours(0, 0, 0, 0),
-                $lt: new Date(createdAt).setUTCHours(23, 59, 59, 999),
-            };
-        }
-        const calls = await Call.find(query)
+        const { filter, sort, limit, skip, page } = parseQueryParams(req.query, ["callId", "serialNumber", "customerName", "customerCode", "contactNumber"]);
+        filter.status = "pending";
+
+        const total = await Call.countDocuments(filter);
+        const calls = await Call.find(filter)
             .populate({
                 path: "engineersAssigned",
                 select: "employeeName employeeCode employeeContact",
             })
-            .sort({ callId: 1 });
+            .sort(sort)
+            .skip(skip)
+            .limit(limit);
+
         return res
             .status(200)
-            .json(new ApiResponse(200, calls, "Calls retrieved successfully"));
+            .json(new ApiResponse(200, formatPaginatedResponse(calls, total, page, limit), "Calls retrieved successfully"));
     } catch (error) {
         return res
             .status(error.statusCode || 500)
@@ -214,8 +212,7 @@ export const getPendingCalls = async (req, res) => {
                 new ApiResponse(
                     error.statusCode,
                     null,
-                    error.message ||
-                        "Something went wrong while retrieving calls"
+                    error.message || "Something went wrong while retrieving calls"
                 )
             );
     }
@@ -223,13 +220,22 @@ export const getPendingCalls = async (req, res) => {
 
 export const getCompletedCalls = async (req, res) => {
     try {
-        const calls = await Call.find({ status: "completed" }).populate({
-            path: "engineersAssigned",
-            select: "employeeName employeeCode employeeContact",
-        });
+        const { filter, sort, limit, skip, page } = parseQueryParams(req.query, ["callId", "serialNumber", "customerName", "customerCode", "contactNumber"]);
+        filter.status = "completed";
+
+        const total = await Call.countDocuments(filter);
+        const calls = await Call.find(filter)
+            .populate({
+                path: "engineersAssigned",
+                select: "employeeName employeeCode employeeContact",
+            })
+            .sort(sort)
+            .skip(skip)
+            .limit(limit);
+
         return res
             .status(200)
-            .json(new ApiResponse(200, calls, "Calls retrieved successfully"));
+            .json(new ApiResponse(200, formatPaginatedResponse(calls, total, page, limit), "Calls retrieved successfully"));
     } catch (error) {
         return res
             .status(error.statusCode || 500)
@@ -237,8 +243,7 @@ export const getCompletedCalls = async (req, res) => {
                 new ApiResponse(
                     error.statusCode,
                     null,
-                    error.message ||
-                        "Something went wrong while retrieving calls"
+                    error.message || "Something went wrong while retrieving calls"
                 )
             );
     }

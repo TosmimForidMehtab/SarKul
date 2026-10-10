@@ -132,24 +132,21 @@ export const createTransaction = async (req, res) => {
 
 export const getTransactions = async (req, res) => {
     try {
-        const { filter, sort } = createFilter(req.query);
-        if (Object.keys(sort).length === 0) {
-            sort.createdAt = -1;
-        }
-        const transactions = await Transaction.aggregate([
-            {
-                $match: filter,
-            },
-            {
-                $sort: sort,
-            },
-        ]);
+        const { filter, sort, limit, skip, page } = parseQueryParams(req.query, ["callId", "engineerName", "stockId", "serialNumber", "modelNumber"]);
+
+        const transactions = await Transaction.find(filter)
+            .sort(sort)
+            .skip(skip)
+            .limit(limit);
+            
+        const total = await Transaction.countDocuments(filter);
+
         return res
             .status(200)
             .json(
                 new ApiResponse(
                     200,
-                    transactions,
+                    formatPaginatedResponse(transactions, total, page, limit),
                     "Transactions retrieved successfully"
                 )
             );

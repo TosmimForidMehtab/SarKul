@@ -149,14 +149,19 @@ const EngineerToBranch = () => {
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <Autocomplete
-                  options={engineerOptions}
-                  getOptionLabel={(option) => option.employeeName || ''}
-                  onChange={(e, value) => formik.setFieldValue('engineerName', value?.employeeName || '')}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Engineer Name" required fullWidth />
-                  )}
-                />
+                <TextField
+                  fullWidth
+                  select
+                  label="Engineer Name"
+                  name="engineerName"
+                  value={formik.values.engineerName}
+                  onChange={formik.handleChange}
+                  required
+                >
+                  {engineerOptions.map((eng, idx) => (
+                    <MenuItem key={idx} value={eng.employeeName}>{eng.employeeName}</MenuItem>
+                  ))}
+                </TextField>
               </Grid>
               
               <Grid item xs={12} md={6}>
@@ -170,15 +175,14 @@ const EngineerToBranch = () => {
                 >
                   <MenuItem value="printer">Printer</MenuItem>
                   <MenuItem value="scanner">Scanner</MenuItem>
+                  <MenuItem value="plotter">Plotter</MenuItem>
                   <MenuItem value="desktop">Desktop</MenuItem>
                   <MenuItem value="laptop">Laptop</MenuItem>
-                  <MenuItem value="plotter">Plotter</MenuItem>
                   <MenuItem value="server">Server</MenuItem>
-                  <MenuItem value="activity">Activity</MenuItem>
-                  <MenuItem value="cctv">CCTV</MenuItem>
                   <MenuItem value="UPS">UPS</MenuItem>
-                  <MenuItem value="Mouse">Mouse</MenuItem>
+                  <MenuItem value="cctv">CCTV</MenuItem>
                   <MenuItem value="Keyboard">Keyboard</MenuItem>
+                  <MenuItem value="Mouse">Mouse</MenuItem>
                   <MenuItem value="PowerSupply">Power Supply</MenuItem>
                   <MenuItem value="Motherboard">Motherboard</MenuItem>
                   <MenuItem value="HardDisk">Hard Disk</MenuItem>
@@ -186,17 +190,6 @@ const EngineerToBranch = () => {
                   <MenuItem value="RAM">RAM</MenuItem>
                   <MenuItem value="CPUFan">CPU Fan</MenuItem>
                   <MenuItem value="Processor">Processor</MenuItem>
-                  <MenuItem value="MilerStrip">Miler Strip</MenuItem>
-                  <MenuItem value="PaperPickupRoller">Paper Pickup Roller</MenuItem>
-                  <MenuItem value="PhotoSensor">Photo Sensor</MenuItem>
-                  <MenuItem value="LogicCard">Logic Card</MenuItem>
-                  <MenuItem value="PrintHead">Print Head</MenuItem>
-                  <MenuItem value="Teflon">Teflon</MenuItem>
-                  <MenuItem value="PressureRoller">Pressure Roller</MenuItem>
-                  <MenuItem value="Gear">Gear</MenuItem>
-                  <MenuItem value="CarriageBlock">Carriage Block</MenuItem>
-                  <MenuItem value="AllInOne">All In One</MenuItem>
-                  <MenuItem value="Cable">Cable</MenuItem>
                   <MenuItem value="SSD">SSD</MenuItem>
                   <MenuItem value="TFT">TFT</MenuItem>
                 </TextField>
@@ -224,6 +217,22 @@ const EngineerToBranch = () => {
                 >
                   <MenuItem value="working">Working</MenuItem>
                   <MenuItem value="faulty">Faulty</MenuItem>
+                </TextField>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Dispatch Mode"
+                  name="dispatchMode"
+                  value={formik.values.dispatchMode}
+                  onChange={formik.handleChange}
+                  required
+                >
+                  <MenuItem value="RGP">RGP</MenuItem>
+                  <MenuItem value="NRGP">NRGP</MenuItem>
+                  <MenuItem value="consumable">Consumable</MenuItem>
                 </TextField>
               </Grid>
               

@@ -62,31 +62,30 @@ const ManpowerInfo = () => {
     fetchOptions();
   }, [debouncedSearch]);
 
-  // Fetch full details when an employee is selected
+  // Fetch full details when an employee is selected via dropdown or URL
   useEffect(() => {
-    if (selectedEmployee?.employeeCode) {
+    if (selectedEmployee?.employeeCode && selectedEmployee.employeeCode !== employeeDetails?.employeeCode) {
       fetchEmployeeDetails(selectedEmployee.employeeCode);
-      // Update URL without page reload
       navigate(`/v2/man-power/info?code=${selectedEmployee.employeeCode}`, { replace: true });
-    } else {
+    } else if (!selectedEmployee && !initialCode) {
       setEmployeeDetails(null);
       navigate(`/v2/man-power/info`, { replace: true });
     }
-  }, [selectedEmployee]);
+  }, [selectedEmployee, navigate, employeeDetails, initialCode]);
 
   // Initial load if code is in URL
   useEffect(() => {
-    if (initialCode && !employeeDetails && !loadingDetails) {
+    if (initialCode && !selectedEmployee) {
       fetchEmployeeDetails(initialCode);
     }
-  }, [initialCode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchEmployeeDetails = async (code) => {
     setLoadingDetails(true);
     try {
       const res = await api.get(`/engineer/${code}`);
       setEmployeeDetails(res.data.data);
-      // Prevent object reference change to avoid infinite useEffect loop
       setSelectedEmployee((prev) => {
         if (prev?.employeeCode === res.data.data.employeeCode) return prev;
         return {

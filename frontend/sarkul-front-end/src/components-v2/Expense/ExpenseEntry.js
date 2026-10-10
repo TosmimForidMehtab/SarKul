@@ -75,40 +75,39 @@ const ExpenseEntry = () => {
             <Grid container spacing={3}>
               
               <Grid item xs={12} md={6}>
-                <Autocomplete
-                  options={engineerOptions}
-                  getOptionLabel={(option) => option.employeeName || option}
-                  onChange={(e, value) => {
-                    formik.setFieldValue('engineerName', value?.employeeName || value || '');
-                  }}
-                  renderInput={(params) => (
-                    <TextField 
-                      {...params} 
-                      label="Engineer Name" 
-                      required 
-                      fullWidth 
-                      error={formik.touched.engineerName && Boolean(formik.errors.engineerName)}
-                      helperText={formik.touched.engineerName && formik.errors.engineerName}
-                    />
-                  )}
-                />
+                <TextField
+                  fullWidth
+                  select
+                  label="Engineer Name"
+                  name="engineerName"
+                  value={formik.values.engineerName}
+                  onChange={formik.handleChange}
+                  error={formik.touched.engineerName && Boolean(formik.errors.engineerName)}
+                  helperText={formik.touched.engineerName && formik.errors.engineerName}
+                  required
+                >
+                  {engineerOptions.map((eng, idx) => (
+                    <MenuItem key={idx} value={eng.employeeName || eng}>{eng.employeeName || eng}</MenuItem>
+                  ))}
+                </TextField>
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <Autocomplete
-                  options={categories}
-                  onChange={(e, value) => formik.setFieldValue('category', value || '')}
-                  renderInput={(params) => (
-                    <TextField 
-                      {...params} 
-                      label="Category" 
-                      required 
-                      fullWidth 
-                      error={formik.touched.category && Boolean(formik.errors.category)}
-                      helperText={formik.touched.category && formik.errors.category}
-                    />
-                  )}
-                />
+                <TextField
+                  fullWidth
+                  select
+                  label="Category"
+                  name="category"
+                  value={formik.values.category}
+                  onChange={formik.handleChange}
+                  error={formik.touched.category && Boolean(formik.errors.category)}
+                  helperText={formik.touched.category && formik.errors.category}
+                  required
+                >
+                  {categories.map((c) => (
+                    <MenuItem key={c} value={c}>{c}</MenuItem>
+                  ))}
+                </TextField>
               </Grid>
 
               <Grid item xs={12} md={6}>

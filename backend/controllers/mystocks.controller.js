@@ -6,34 +6,17 @@ import {MyStocks} from "../models/myStocks.js";
 
 export const getMyStocks = async (req, res, next) => {
     try {
-        const myStocks = await MyStocks.aggregate([
-            {
-                $project: {
-                    _id: 0,
-                    serialNumber: 1,
-                    totalPrice: 1,
-                    brand: 1,
-                    price: 1,
-                    warrantyStart: 1,
-                    warrantyEnd: 1,
-                    itemName: 1,
-                },
-            },
-            {
-                $group: {
-                    _id: null,
-                    totalStocks: {$sum: 1},
-                    totalAmount: {$sum: "$price"},
-                    data: {$push: "$$ROOT"},
-                },
-            }
-        ]);
+        const { filter, sort, limit, skip, page } = parseQueryParams(req.query, ["itemName", "serialNumber", "brand"]);
 
-        if (!myStocks) {
-            throw new ApiError(404, "Stocks not found");
-        }
+        const myStocks = await MyStocks.find(filter)
+            .sort(sort)
+            .skip(skip)
+            .limit(limit)
+            .select("-_id serialNumber totalPrice brand price warrantyStart warrantyEnd itemName");
 
-        return res.status(200).json(new ApiResponse(200, "success", myStocks));
+        const total = await MyStocks.countDocuments(filter);
+
+        return res.status(200).json(new ApiResponse(200, formatPaginatedResponse(myStocks, total, page, limit), "Stocks retrieved successfully"));
     } catch (error) {
         return res.status(error.statusCode || 500).json(
             new ApiResponse(error.statusCode, null, error.message)
