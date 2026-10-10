@@ -93,7 +93,7 @@ const PendingCalls = () => {
     try {
       await api.post('/call/assign', {
         callId: selectedCall.callId || selectedCall.callNumber,
-        engineerCode: selectedEngineer.employeeCode
+        engineerName: selectedEngineer.employeeName
       });
       toast.success('Call assigned successfully');
       setAssignModalOpen(false);

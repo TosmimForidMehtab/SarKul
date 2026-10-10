@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, Card, CardContent, Typography, TextField, 
-  Grid, Autocomplete, CircularProgress, Stack, Divider, Chip
+  Grid, Autocomplete, CircularProgress, Stack, Divider, Chip,
+  Button, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
@@ -14,6 +15,25 @@ const CallDetails = () => {
   const [callDetails, setCallDetails] = useState(null);
   const [callsLoading, setCallsLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
+
+  const [engineers, setEngineers] = useState([]);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [selectedEngineer, setSelectedEngineer] = useState(null);
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchEngineers = async () => {
+      try {
+        const res = await api.get('/engineer');
+        let engData = res.data.data || res.data;
+        if (engData && !Array.isArray(engData) && Array.isArray(engData.data)) engData = engData.data;
+        setEngineers(Array.isArray(engData) ? engData : []);
+      } catch (err) {
+        console.error('Failed to load engineers');
+      }
+    };
+    fetchEngineers();
+  }, []);
 
   const fetchCalls = async (query) => {
     if (!query) return;
@@ -49,6 +69,27 @@ const CallDetails = () => {
       fetchCallDetails(newValue.callId);
     } else {
       setCallDetails(null);
+    }
+  };
+
+  const handleAssign = async () => {
+    if (!selectedEngineer) {
+      toast.error('Please select an engineer');
+      return;
+    }
+    setAssignSubmitting(true);
+    try {
+      await api.post('/call/assign', {
+        callId: callDetails.callId,
+        engineerName: selectedEngineer.employeeName
+      });
+      toast.success('Call assigned successfully');
+      setAssignModalOpen(false);
+      fetchCallDetails(callDetails.callId);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to assign call');
+    } finally {
+      setAssignSubmitting(false);
     }
   };
 
@@ -148,9 +189,16 @@ const CallDetails = () => {
                     <Typography variant="body1">{callDetails.engineersAssigned[0].employeeCode}</Typography>
                   </Box>
                 ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No engineer has been assigned to this call yet.
-                  </Typography>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" mb={2}>
+                      No engineer has been assigned to this call yet.
+                    </Typography>
+                    {callDetails.status === 'pending' && (
+                      <Button variant="outlined" size="small" fullWidth onClick={() => setAssignModalOpen(true)}>
+                        Assign Engineer
+                      </Button>
+                    )}
+                  </Box>
                 )}
                 
                 <Box mt={4}>
@@ -172,6 +220,26 @@ const CallDetails = () => {
           </Grid>
         </Grid>
       )}
+
+      {/* Assign Engineer Modal */}
+      <Dialog open={assignModalOpen} onClose={() => setAssignModalOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Assign Engineer - {callDetails?.callId}</DialogTitle>
+        <DialogContent dividers>
+          <Autocomplete
+            options={engineers}
+            getOptionLabel={(option) => `${option.employeeName} (${option.employeeCode})`}
+            onChange={(e, val) => setSelectedEngineer(val)}
+            value={selectedEngineer}
+            renderInput={(params) => <TextField {...params} label="Select Engineer" margin="normal" />}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAssignModalOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleAssign} disabled={assignSubmitting}>
+            {assignSubmitting ? 'Assigning...' : 'Assign'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
