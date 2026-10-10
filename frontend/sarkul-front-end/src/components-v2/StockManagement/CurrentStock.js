@@ -12,6 +12,7 @@ import { CardSkeleton } from '../shared/LoadingSkeleton';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
 import { exportToCSV } from '../../utils/exportToCSV';
+import { formatDate } from '../../utils/formatDate';
 
 const CurrentStock = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,8 +46,8 @@ const CurrentStock = () => {
       ModelNumber: item.modelNumber,
       SerialNumber: item.serialNumber,
       Price: `Rs ${item.price}`,
-      AMCStartDate: item.amcStartDate ? new Date(item.amcStartDate).toLocaleDateString() : '',
-      AMCEndDate: item.amcEndDate ? new Date(item.amcEndDate).toLocaleDateString() : ''
+      AMCStartDate: item.amcStartDate ? formatDate(item.amcStartDate) : '',
+      AMCEndDate: item.amcEndDate ? formatDate(item.amcEndDate) : ''
     }));
     exportToCSV(csvData, 'Current_Stock.csv');
   };
@@ -200,15 +201,15 @@ const CurrentStock = () => {
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">AMC Start Date</Typography>
-                  <Typography variant="body1">{selectedStock.amcStartDate ? new Date(selectedStock.amcStartDate).toLocaleDateString() : 'N/A'}</Typography>
+                  <Typography variant="body1">{selectedStock.amcStartDate ? formatDate(selectedStock.amcStartDate) : 'N/A'}</Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">AMC End Date</Typography>
-                  <Typography variant="body1">{selectedStock.amcEndDate ? new Date(selectedStock.amcEndDate).toLocaleDateString() : 'N/A'}</Typography>
+                  <Typography variant="body1">{selectedStock.amcEndDate ? formatDate(selectedStock.amcEndDate) : 'N/A'}</Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Added On</Typography>
-                  <Typography variant="body1">{selectedStock.createdAt ? new Date(selectedStock.createdAt).toLocaleDateString() : 'N/A'}</Typography>
+                  <Typography variant="body1">{selectedStock.createdAt ? formatDate(selectedStock.createdAt) : 'N/A'}</Typography>
                 </Box>
               </Stack>
               

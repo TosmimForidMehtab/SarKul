@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
 import StatusBadge from '../shared/StatusBadge';
 import api from '../../services/api';
+import { formatDateTime } from '../../utils/formatDate';
 
 const CallDetails = () => {
   const [callOptions, setCallOptions] = useState([]);
@@ -207,11 +208,11 @@ const CallDetails = () => {
                   <Stack spacing={2}>
                     <Box>
                       <Typography variant="caption" color="text.secondary">Created On</Typography>
-                      <Typography variant="body2">{new Date(callDetails.createdAt).toLocaleString()}</Typography>
+                      <Typography variant="body2">{formatDateTime(callDetails.createdAt)}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary">Last Updated</Typography>
-                      <Typography variant="body2">{new Date(callDetails.updatedAt).toLocaleString()}</Typography>
+                      <Typography variant="body2">{formatDateTime(callDetails.updatedAt)}</Typography>
                     </Box>
                   </Stack>
                 </Box>

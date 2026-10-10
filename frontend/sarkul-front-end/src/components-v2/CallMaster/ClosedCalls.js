@@ -12,6 +12,7 @@ import { CardSkeleton } from '../shared/LoadingSkeleton';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
 import { exportToCSV } from '../../utils/exportToCSV';
+import { formatDate } from '../../utils/formatDate';
 
 const ClosedCalls = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,7 +36,7 @@ const ClosedCalls = () => {
       Status: call.status || 'closed',
       Customer: call.customerName,
       Category: call.category,
-      ClosedOn: call.updatedAt ? new Date(call.updatedAt).toLocaleDateString() : '',
+      ClosedOn: call.updatedAt ? formatDate(call.updatedAt) : '',
       Remarks: call.remarks || ''
     }));
     exportToCSV(csvData, 'Closed_Calls.csv');
@@ -108,7 +109,7 @@ const ClosedCalls = () => {
                     Customer: {call.customerName}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Closed On: {call.updatedAt ? new Date(call.updatedAt).toLocaleDateString() : 'N/A'}
+                    Closed On: {call.updatedAt ? formatDate(call.updatedAt) : 'N/A'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" noWrap>
                     Remarks: {call.remarks || 'No remarks'}

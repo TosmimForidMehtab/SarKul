@@ -13,6 +13,7 @@ import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import StatusBadge from '../shared/StatusBadge';
 import { CardSkeleton, TableSkeleton } from '../shared/LoadingSkeleton';
+import { formatDate } from '../../utils/formatDate';
 
 const StatCard = ({ title, value, icon, color }) => (
   <Card sx={{ height: '100%', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)', borderRadius: 2 }}>
@@ -125,7 +126,7 @@ const DashboardHome = () => {
                       </TableCell>
                       <TableCell>{row.customerName}</TableCell>
                       <TableCell>{row.category}</TableCell>
-                      <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>{formatDate(row.createdAt)}</TableCell>
                       <TableCell>
                         <StatusBadge status={row.status} />
                       </TableCell>

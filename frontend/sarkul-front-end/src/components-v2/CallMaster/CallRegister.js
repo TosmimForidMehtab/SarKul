@@ -12,6 +12,7 @@ import { TableSkeleton, CardSkeleton } from '../shared/LoadingSkeleton';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
 import { exportToCSV } from '../../utils/exportToCSV';
+import { formatDate } from '../../utils/formatDate';
 
 const CallRegister = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,7 +40,7 @@ const CallRegister = () => {
       Customer: call.customerName,
       Category: call.category,
       Problem: call.problemDescription,
-      CreatedOn: call.createdAt ? new Date(call.createdAt).toLocaleDateString() : ''
+      CreatedOn: call.createdAt ? formatDate(call.createdAt) : ''
     }));
     exportToCSV(csvData, 'Call_Register.csv');
   };

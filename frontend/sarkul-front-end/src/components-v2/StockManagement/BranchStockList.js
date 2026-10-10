@@ -11,6 +11,7 @@ import EmptyState from '../shared/EmptyState';
 import { CardSkeleton } from '../shared/LoadingSkeleton';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
+import { formatDate } from '../../utils/formatDate';
 
 const BranchStockList = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -78,7 +79,7 @@ const BranchStockList = () => {
                   </Typography>
                   {stock.warrantyStart && stock.warrantyEnd && (
                     <Typography variant="body2" color="text.secondary">
-                      Warranty: {new Date(stock.warrantyStart).toLocaleDateString()} to {new Date(stock.warrantyEnd).toLocaleDateString()}
+                      Warranty: {formatDate(stock.warrantyStart)} to {formatDate(stock.warrantyEnd)}
                     </Typography>
                   )}
                 </CardContent>
@@ -128,15 +129,15 @@ const BranchStockList = () => {
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Warranty Start</Typography>
-                  <Typography variant="body1">{selectedStock.warrantyStart ? new Date(selectedStock.warrantyStart).toLocaleDateString() : 'N/A'}</Typography>
+                  <Typography variant="body1">{selectedStock.warrantyStart ? formatDate(selectedStock.warrantyStart) : 'N/A'}</Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Warranty End</Typography>
-                  <Typography variant="body1">{selectedStock.warrantyEnd ? new Date(selectedStock.warrantyEnd).toLocaleDateString() : 'N/A'}</Typography>
+                  <Typography variant="body1">{selectedStock.warrantyEnd ? formatDate(selectedStock.warrantyEnd) : 'N/A'}</Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Added On</Typography>
-                  <Typography variant="body1">{selectedStock.createdAt ? new Date(selectedStock.createdAt).toLocaleDateString() : 'N/A'}</Typography>
+                  <Typography variant="body1">{selectedStock.createdAt ? formatDate(selectedStock.createdAt) : 'N/A'}</Typography>
                 </Box>
               </Stack>
               

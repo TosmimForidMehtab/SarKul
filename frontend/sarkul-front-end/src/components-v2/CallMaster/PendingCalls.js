@@ -14,6 +14,7 @@ import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
 import api from '../../services/api';
 import { exportToCSV } from '../../utils/exportToCSV';
+import { formatDate } from '../../utils/formatDate';
 
 const PendingCalls = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,7 +50,7 @@ const PendingCalls = () => {
       Customer: call.customerName,
       Category: call.category,
       Problem: call.problemDescription,
-      CreatedOn: call.createdAt ? new Date(call.createdAt).toLocaleDateString() : ''
+      CreatedOn: call.createdAt ? formatDate(call.createdAt) : ''
     }));
     exportToCSV(csvData, 'Pending_Calls.csv');
   };

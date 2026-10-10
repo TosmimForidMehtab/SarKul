@@ -30,6 +30,7 @@ import EmptyState from '../shared/EmptyState';
 import api from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { toast } from 'react-toastify';
+import { formatDate } from '../../utils/formatDate';
 
 const ManpowerInfo = () => {
   const location = useLocation();
@@ -103,7 +104,7 @@ const ManpowerInfo = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString();
+    return formatDate(dateString);
   };
 
   const getStatusColor = (status) => {

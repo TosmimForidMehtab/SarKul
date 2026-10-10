@@ -11,6 +11,7 @@ import { CardSkeleton } from '../shared/LoadingSkeleton';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
 import { exportToCSV } from '../../utils/exportToCSV';
+import { formatDate } from '../../utils/formatDate';
 
 const categories = ['Travel', 'BackEnd', 'Miscellneous', 'Courier', 'exp'];
 const months = [
@@ -49,7 +50,7 @@ const ExpenseList = () => {
       Month: expense.month,
       Period: expense.period,
       Remarks: expense.remarks || '',
-      Date: expense.createdAt ? new Date(expense.createdAt).toLocaleDateString() : ''
+      Date: expense.createdAt ? formatDate(expense.createdAt) : ''
     }));
     exportToCSV(csvData, 'Expense_Report.csv');
   };
