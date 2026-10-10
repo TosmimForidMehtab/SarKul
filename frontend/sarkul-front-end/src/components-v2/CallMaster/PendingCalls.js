@@ -197,6 +197,9 @@ const PendingCalls = () => {
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Category: {call.category}
                   </Typography>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Date: {formatDate(call.createdAt)}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1, p: 1, bgcolor: 'rgba(0,0,0,0.03)', borderRadius: 1 }}>
                     {call.problemDescription?.substring(0, 50)}...
                   </Typography>
