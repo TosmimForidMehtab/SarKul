@@ -20,7 +20,10 @@ const CallDetails = () => {
     setCallsLoading(true);
     try {
       const res = await api.get(`/call/lookup?search=${query}`);
-      setCallOptions(res.data || []);
+      let calls = res.data.data || res.data;
+      if (calls && !Array.isArray(calls) && Array.isArray(calls.data)) calls = calls.data;
+      if (!Array.isArray(calls)) calls = [];
+      setCallOptions(calls);
     } catch (err) {
       console.error(err);
     } finally {
