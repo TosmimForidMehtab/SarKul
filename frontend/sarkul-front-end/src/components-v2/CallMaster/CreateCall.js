@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Card, CardContent, Typography, TextField, 
-  Grid, Button, MenuItem, Stack, Divider, Autocomplete 
+import {
+  Box, Card, CardContent, Typography, TextField,
+  Grid, Button, MenuItem, Stack, Divider, Autocomplete
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
@@ -54,8 +54,8 @@ const CreateCall = () => {
       const res = await api.post('/call', formData);
       toast.success('Call logged successfully! Call No: ' + res.data.data);
       setFormData({
-        serialNumber: '', customerName: '', customerCode: '', userName: '', 
-        contactNumber: '', customerEmail: '', customerAddress: '', category: '', 
+        serialNumber: '', customerName: '', customerCode: '', userName: '',
+        contactNumber: '', customerEmail: '', customerAddress: '', category: '',
         itemName: '', itemModelNumber: '', problemDescription: '', priority: 'medium'
       });
     } catch (err) {
@@ -68,7 +68,7 @@ const CreateCall = () => {
   return (
     <Box>
       <PageHeader title="Call Log" />
-      
+
       <Card>
         <CardContent>
           <form onSubmit={handleSubmit}>
@@ -124,7 +124,7 @@ const CreateCall = () => {
                   options={groups}
                   value={formData.itemName}
                   onChange={(e, newValue) => setFormData({ ...formData, itemName: newValue || '' })}
-                  renderInput={(params) => <TextField {...params} label="Group (Item Name)" required size="small" />}
+                  renderInput={(params) => <TextField {...params} label="Group" required size="small" />}
                 />
               </Grid>
               <Grid item xs={12} md={4}>
@@ -137,8 +137,8 @@ const CreateCall = () => {
 
             <Stack direction="row" justifyContent="flex-end" spacing={2}>
               <Button variant="outlined" color="secondary" type="button" onClick={() => setFormData({
-                serialNumber: '', customerName: '', customerCode: '', userName: '', 
-                contactNumber: '', customerEmail: '', customerAddress: '', category: '', 
+                serialNumber: '', customerName: '', customerCode: '', userName: '',
+                contactNumber: '', customerEmail: '', customerAddress: '', category: '',
                 itemName: '', itemModelNumber: '', problemDescription: '', priority: 'medium'
               })}>
                 Reset
