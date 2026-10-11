@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Card, CardContent, Typography, TextField,
-  Grid, Button, MenuItem, Stack, Divider, Autocomplete
+  Grid, Button, MenuItem, Stack, Divider, Autocomplete, IconButton
 } from '@mui/material';
+import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
 import api from '../../services/api';
@@ -24,24 +25,49 @@ const CreateCall = () => {
   });
   const [loading, setLoading] = useState(false);
   const [groups, setGroups] = useState([]);
+  const [isAddingGroup, setIsAddingGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [addingGroupLoading, setAddingGroupLoading] = useState(false);
+
+  const fetchGroups = async () => {
+    try {
+      const res = await api.get('/group');
+      let temp = [];
+      let groupList = res?.data?.data?.data || (Array.isArray(res?.data?.data) ? (res.data.data[0]?.data || res.data.data) : []);
+      (Array.isArray(groupList) ? groupList : []).forEach((item) => {
+        if (item?.groupName && !item.groupName.includes('test') && !item.groupName.includes('Test')) {
+          temp.push(item.groupName);
+        }
+      });
+      setGroups(temp);
+    } catch (err) {
+      console.error("Failed to load groups");
+    }
+  };
 
   useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        const res = await api.get('/group');
-        let temp = [];
-        res?.data?.data[0]?.data?.forEach((item) => {
-          if (!item.groupName.includes('test') && !item.groupName.includes('Test')) {
-            temp.push(item.groupName);
-          }
-        });
-        setGroups(temp);
-      } catch (err) {
-        console.error("Failed to load groups");
-      }
-    };
     fetchGroups();
   }, []);
+
+  const handleAddGroup = async () => {
+    if (!newGroupName.trim()) {
+      toast.error('Please enter a group name');
+      return;
+    }
+    setAddingGroupLoading(true);
+    try {
+      await api.post('/group', { groupName: newGroupName.trim() });
+      toast.success('Group added successfully');
+      await fetchGroups();
+      setFormData((prev) => ({ ...prev, itemName: newGroupName.trim() }));
+      setNewGroupName('');
+      setIsAddingGroup(false);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to add group');
+    } finally {
+      setAddingGroupLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -120,12 +146,56 @@ const CreateCall = () => {
                 </TextField>
               </Grid>
               <Grid item xs={12} md={4}>
-                <Autocomplete
-                  options={groups}
-                  value={formData.itemName}
-                  onChange={(e, newValue) => setFormData({ ...formData, itemName: newValue || '' })}
-                  renderInput={(params) => <TextField {...params} label="Group" required size="small" />}
-                />
+                {!isAddingGroup ? (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Autocomplete
+                      fullWidth
+                      options={groups}
+                      value={formData.itemName}
+                      onChange={(e, newValue) => setFormData({ ...formData, itemName: newValue || '' })}
+                      renderInput={(params) => <TextField {...params} label="Group" required size="small" />}
+                    />
+                    <IconButton
+                      color="primary"
+                      title="Add new group"
+                      onClick={() => setIsAddingGroup(true)}
+                      sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 0.8 }}
+                    >
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                ) : (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <TextField
+                      fullWidth
+                      label="New Group Name"
+                      size="small"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      placeholder="Enter group name"
+                      autoFocus
+                    />
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleAddGroup}
+                      disabled={addingGroupLoading || !newGroupName.trim()}
+                      sx={{ minWidth: '70px', height: '40px' }}
+                    >
+                      {addingGroupLoading ? 'Adding...' : 'Add'}
+                    </Button>
+                    <IconButton
+                      size="small"
+                      title="Cancel"
+                      onClick={() => {
+                        setIsAddingGroup(false);
+                        setNewGroupName('');
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                )}
               </Grid>
               <Grid item xs={12} md={4}>
                 <TextField fullWidth label="Model Number" name="itemModelNumber" value={formData.itemModelNumber} onChange={handleChange} required size="small" />
