@@ -157,8 +157,8 @@ function CallCard({ callNumber, customerName, date, link, isPending, engineers, 
                 width: '15rem',
                 margin: '1rem'
               }}
-              options={engineers || []}
-              getOptionLabel={(option) => option?.employeeName}
+              options={Array.isArray(engineers) ? engineers : []}
+              getOptionLabel={(option) => option?.employeeName || ""}
               onChange={(event, value) => {
                 setState((prev) => ({
                   ...prev,

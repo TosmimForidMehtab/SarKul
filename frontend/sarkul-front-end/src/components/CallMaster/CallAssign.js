@@ -31,7 +31,8 @@ async function getEngineerName()
       }
     };
     let response = await axios.get(url,config);
-    setArr(response.data.data);
+    let eng = response.data.data?.data || response.data.data;
+    setArr(Array.isArray(eng) ? eng : []);
    }
    catch(error)
    {

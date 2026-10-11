@@ -100,7 +100,9 @@ const ExpenseEntry = () => {
         }
       };
       let response = await axios.get(url, config);
-      setNames(response?.data?.data?.map((item) => item?.employeeName));
+      let engList = response?.data?.data?.data || response?.data?.data;
+      let safeList = Array.isArray(engList) ? engList : [];
+      setNames(safeList.map((item) => item?.employeeName));
       setIsLoadingName(false)
     }
     catch (error) {

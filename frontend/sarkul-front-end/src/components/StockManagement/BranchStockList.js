@@ -25,12 +25,9 @@ function BranchStockList() {
                 },
             };
             const response = await axios.get(url, config);
-
-            console.log(response.data.message[0].data)
-            let arr = response.data.message[0].data;
-            arr.reverse()
-            setData(arr)
-
+            let rawList = response.data.data?.data || (Array.isArray(response.data.data) ? response.data.data : response.data.message?.[0]?.data);
+            let arr = Array.isArray(rawList) ? [...rawList].reverse() : [];
+            setData(arr);
         }
         catch (error) {
 

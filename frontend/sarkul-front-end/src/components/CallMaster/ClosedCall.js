@@ -34,16 +34,16 @@ function ClosedCall() {
     try {
       let url = 'https://sarkultechapi.onrender.com/api/v1/call/closed';
       let response = await axios.get(url, config);
-      // console.log("response in closed");
-      // console.log(response.data.data);
-      setArr(response.data.data.reverse());
+      let calls = response.data.data?.data || response.data.data;
+      let safeList = Array.isArray(calls) ? [...calls].reverse() : [];
+      setArr(safeList);
       setSuccessMsg(response.data.message);
       setIsLoading(false);
     }
     catch (error) {
       // console.log("error in closed call: "+error)
       // alert("some error occured");
-      setErrorMsg(error.response.data.message);
+      setErrorMsg(error.response?.data?.message || "Failed to load closed calls");
       setIsLoading(false);
     }
   }
@@ -61,7 +61,9 @@ function ClosedCall() {
       }
       let url = `https://sarkultechapi.onrender.com/api/v1/call?startDate=${startDate}&endDate=${endDate}`
       let response = await axios.get(url, config);
-      let temp = response.data.data.filter((item) => { return item.status == 'completed' })
+      let calls = response.data.data?.data || response.data.data;
+      let safeList = Array.isArray(calls) ? calls : [];
+      let temp = safeList.filter((item) => { return item.status == 'completed' })
       setArr(temp);
 
 

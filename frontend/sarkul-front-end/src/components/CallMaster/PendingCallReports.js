@@ -39,7 +39,8 @@ function PendingCallReports() {
         }
       };
       let response = await axios.get(url, config);
-      setEngineers(response.data.data);
+      let eng = response.data.data?.data || response.data.data;
+      setEngineers(Array.isArray(eng) ? eng : []);
     }
     catch (error) {
       console.log(error);
@@ -61,7 +62,8 @@ function PendingCallReports() {
       };
       let url = "https://sarkultechapi.onrender.com/api/v1/call/pending";
       let response = await axios.get(url, config);
-      setArr(response?.data.data);
+      let calls = response?.data?.data?.data || response?.data?.data;
+      setArr(Array.isArray(calls) ? calls : []);
       setSuccessMsg(response?.data.message);
       setIsLoading(false);
     } catch (error) {
@@ -83,7 +85,9 @@ function PendingCallReports() {
       };
       let url = `https://sarkultechapi.onrender.com/api/v1/call?startDate=${startDate}&endDate=${endDate}`;
       let response = await axios.get(url, config);
-      let temp = response.data.data.filter((item) => {
+      let calls = response.data.data?.data || response.data.data;
+      let safeList = Array.isArray(calls) ? calls : [];
+      let temp = safeList.filter((item) => {
         return item.status == "pending";
       });
       setArr(temp);

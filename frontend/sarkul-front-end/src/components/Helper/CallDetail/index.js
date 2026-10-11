@@ -47,22 +47,25 @@ function CallDetails({ callNumber, setFlag }) {
 
       let response = await axios.get(url, config);
       console.log(response, 'response here');
-      setObj(response.data.data);
-      setSerialNumber(response.data.data.serialNumber);
-      setCustomerName(response.data.data.customerName);
-      setCustomerCode(response.data.data.customerCode);
-      setContact(response.data.data.contactNumber);
-      setEmail(response.data.data.customerEmail);
-      setAddress(response.data.data.customerAddress);
-      setCategory(response.data.data.category)
-      setProblem(response.data.data.problemDescription);
-      setModelNumber(response.data.data.itemModelNumber);
-      setItem(response.data.data.itemName);
-      if (response.data.data.engineersAssigned[0]) {
-        setEngineer(response.data.data.engineersAssigned[response.data.data.engineersAssigned.length - 1].employeeName);
+      let callData = response.data.data || {};
+      setObj(callData);
+      setSerialNumber(callData.serialNumber || '');
+      setCustomerName(callData.customerName || '');
+      setCustomerCode(callData.customerCode || '');
+      setContact(callData.contactNumber || '');
+      setEmail(callData.customerEmail || '');
+      setAddress(callData.customerAddress || '');
+      setCategory(callData.category || '');
+      setProblem(callData.problemDescription || '');
+      setModelNumber(callData.itemModelNumber || '');
+      setItem(callData.itemName || '');
+      if (callData.engineersAssigned && callData.engineersAssigned.length > 0) {
+        setEngineer(callData.engineersAssigned[callData.engineersAssigned.length - 1]?.employeeName || '');
+      } else {
+        setEngineer('Not Assigned');
       }
-      setDate(response.data.data.createdAt);
-      setStatus(response.data.data.status);
+      setDate(callData.createdAt || '');
+      setStatus(callData.status || '');
       //  console.log("problem")
       //  console.log(problem)
       console.log(response.data.data);
@@ -107,7 +110,7 @@ function CallDetails({ callNumber, setFlag }) {
               <label className='update-label call-detail-label'>Group: </label> {item}<br /><br />
               <label className='update-label call-detail-label'>Address: </label> {address}<br /><br />
               <label className='update-label call-detail-label'>Engineer Assigned: </label> {engineer}<br /><br />
-              <label className='update-label call-detail-label'>Call-log Date: </label> {date.slice(0, 10)}<br /><br />
+              <label className='update-label call-detail-label'>Call-log Date: </label> {date ? date.slice(0, 10) : 'N/A'}<br /><br />
               <label className='update-label call-detail-label'>Part Status: </label> {obj?.itemStatus}
             </div>
           </div>

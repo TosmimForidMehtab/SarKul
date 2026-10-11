@@ -114,14 +114,14 @@ function CallLogs() {
         },
       };
       const response = await axios.get(url, config);
-      let temp = []
-      response?.data?.data[0]?.data?.forEach((item) => {
-        if (!item.groupName.includes('test') && !item.groupName.includes('Test')) {
-
-          temp = [...temp, item.groupName]
+      let temp = [];
+      let groups = response?.data?.data?.data || (Array.isArray(response?.data?.data) ? (response.data.data[0]?.data || response.data.data) : []);
+      (Array.isArray(groups) ? groups : []).forEach((item) => {
+        if (item?.groupName && !item.groupName.includes('test') && !item.groupName.includes('Test')) {
+          temp = [...temp, item.groupName];
         }
-      })
-      setGroupState((prev) => ({ ...prev, groupArr: temp }))
+      });
+      setGroupState((prev) => ({ ...prev, groupArr: temp }));
 
 
     }

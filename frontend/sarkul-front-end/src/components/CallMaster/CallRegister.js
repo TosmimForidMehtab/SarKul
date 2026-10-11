@@ -30,9 +30,8 @@ function CallRegister() {
       }
       let url = 'https://sarkultechapi.onrender.com/api/v1/call'
       let response = await axios.get(url, config);
-      // console.log("response in all call");
-      // console.log(response.data.data);
-      setArr(response.data.data);
+      let calls = response.data.data?.data || response.data.data;
+      setArr(Array.isArray(calls) ? calls : []);
 
       setIsLoading(false)
     }
@@ -57,7 +56,8 @@ function CallRegister() {
       }
       let url = `https://sarkultechapi.onrender.com/api/v1/call?startDate=${startDate}&endDate=${endDate}`
       let response = await axios.get(url, config);
-      setArr(response.data.data);
+      let calls = response.data.data?.data || response.data.data;
+      setArr(Array.isArray(calls) ? calls : []);
 
 
       setIsLoading(false)

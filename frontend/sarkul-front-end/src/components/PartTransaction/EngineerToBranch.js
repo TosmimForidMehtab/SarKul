@@ -31,7 +31,8 @@ function EngineerToBranch() {
                 }
             };
             let response = await axios.get(url, config);
-            setArr(response.data.data);
+            let engList = response.data.data?.data || response.data.data;
+            setArr(Array.isArray(engList) ? engList : []);
         }
         catch (error) {
             console.log(error);

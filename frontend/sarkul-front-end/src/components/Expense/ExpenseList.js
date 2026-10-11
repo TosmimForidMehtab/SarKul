@@ -24,7 +24,8 @@ function ExpenseList() {
         },
       };
       const response = await axios.get(url, config);
-      setExpense(response?.data?.data[0]?.data)
+      let expList = response?.data?.data?.data || (Array.isArray(response?.data?.data) ? (response.data.data[0]?.data || response.data.data) : []);
+      setExpense(Array.isArray(expList) ? expList : []);
       setIsLoading(false);
 
     }

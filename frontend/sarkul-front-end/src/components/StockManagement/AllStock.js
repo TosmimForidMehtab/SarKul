@@ -35,12 +35,12 @@ function AllStock() {
         },
       };
       const response = await axios.get(url, config);
-      console.log('inside current ')
-      console.log(response.data.data[0].data)
-      setData(response.data.data[0].data)
+      let stockList = response.data.data?.data || (Array.isArray(response.data.data) ? (response.data.data[0]?.data || response.data.data) : []);
+      let safeList = Array.isArray(stockList) ? stockList : [];
+      setData(safeList);
       setState((prev) => ({
         ...prev,
-        dataArr: response.data.data[0].data,
+        dataArr: safeList,
       }))
     }
     catch (error) {

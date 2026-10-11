@@ -35,7 +35,8 @@ function PartTransactionDetail() {
                 }
             };
             let response = await axios.get(url, config);
-            setEng(response.data.data);
+            let engList = response.data.data?.data || response.data.data;
+            setEng(Array.isArray(engList) ? engList : []);
         }
         catch (error) {
             console.log(error);
@@ -54,9 +55,10 @@ function PartTransactionDetail() {
             let url = 'https://sarkultechapi.onrender.com/api/v1/transaction'
             let response = await axios.get(url, config);
 
-            console.log(response.data.data, 'part');
-            setArr(response.data.data);
-            setMasterArr(response.data.data)
+            let txList = response.data.data?.data || response.data.data;
+            let safeList = Array.isArray(txList) ? txList : [];
+            setArr(safeList);
+            setMasterArr(safeList)
             setIsLoading(false)
         }
         catch (error) {

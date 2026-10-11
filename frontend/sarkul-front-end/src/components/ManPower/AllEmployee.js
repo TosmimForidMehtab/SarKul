@@ -13,7 +13,7 @@ function AllEmployee() {
     const [errorMsg, setErrorMsg] = useState("");
     useEffect(()=>{
         getData();
-    },arr);
+    }, []);
 
     async function getData(){
         setIsLoading(true);
@@ -29,8 +29,8 @@ function AllEmployee() {
                 }
             
             let response = await axios.get(url,config);
-            setArr(response.data.data);
-            console.log(response.data.data)
+            let empList = response.data.data?.data || response.data.data;
+            setArr(Array.isArray(empList) ? empList : []);
             setIsLoading(false);
             }
             catch(error)

@@ -101,8 +101,8 @@ function OfficeRepair() {
                 },
             };
             const response = await axios.get(url, config);
-
-            setData(response?.data?.data[0]?.data)
+            let stockList = response?.data?.data?.data || (Array.isArray(response?.data?.data) ? (response.data.data[0]?.data || response.data.data) : []);
+            setData(Array.isArray(stockList) ? stockList : []);
         }
         catch (error) {
 
