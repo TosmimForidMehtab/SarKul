@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, Card, CardContent, Typography, TextField, MenuItem, 
-  Grid, InputAdornment, Stack, Chip, Button
+  Grid, InputAdornment, Stack, Chip, Button, CircularProgress
 } from '@mui/material';
-import { Search as SearchIcon, FilterList as FilterIcon, Download as DownloadIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Download as DownloadIcon, Clear as ClearIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
 import EmptyState from '../shared/EmptyState';
@@ -12,6 +12,7 @@ import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
 import { exportToCSV } from '../../utils/exportToCSV';
 import { formatDate } from '../../utils/formatDate';
+import api from '../../services/api';
 
 const categories = ['Travel', 'BackEnd', 'Miscellneous', 'Courier', 'exp'];
 const months = [
@@ -24,6 +25,9 @@ const ExpenseList = () => {
   const [engineerName, setEngineerName] = useState('');
   const [category, setCategory] = useState('');
   const [month, setMonth] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
   
   const debouncedSearch = useDebounce(searchTerm, 500);
 
@@ -32,28 +36,78 @@ const ExpenseList = () => {
     engineerName: engineerName || undefined,
     category: category || undefined,
     month: month || undefined,
+    startDate: fromDate || undefined,
+    endDate: toDate || undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc'
   });
 
   useEffect(() => { if (error) toast.error(error); }, [error]);
 
-  const handleDownloadCSV = () => {
-    if (!data || data.length === 0) {
-      toast.error('No data to download');
-      return;
+  const handleDownloadCSV = async () => {
+    try {
+      setIsExporting(true);
+      toast.info('Fetching full expense report for download...');
+      const res = await api.get('/expense', {
+        params: {
+          search: debouncedSearch || undefined,
+          engineerName: engineerName || undefined,
+          category: category || undefined,
+          month: month || undefined,
+          startDate: fromDate || undefined,
+          endDate: toDate || undefined,
+          limit: 'all',
+          sortBy: 'createdAt',
+          sortOrder: 'desc'
+        }
+      });
+
+      let rawData = res.data?.data?.data || res.data?.data || [];
+      if (!Array.isArray(rawData) && res.data?.message?.[0]?.data) {
+        rawData = res.data.message[0].data;
+      }
+      if (!Array.isArray(rawData) || rawData.length === 0) {
+        rawData = data;
+      }
+
+      if (!rawData || rawData.length === 0) {
+        toast.error('No expenses to download for selected filters');
+        return;
+      }
+
+      const csvData = rawData.map(expense => ({
+        'Date': expense.createdAt ? formatDate(expense.createdAt) : '',
+        'Engineer Name': expense.engineerName || '',
+        'Group': expense.category || expense.group || '',
+        'Category': expense.category || '',
+        'Amount': "Rs " + (expense.amount ?? ''),
+        'Month': expense.month || '',
+        'Period': expense.period || '',
+        'Remarks': expense.remarks || ''
+      }));
+
+      exportToCSV(csvData, 'Expense_Report.csv');
+      toast.success(`Downloaded ${csvData.length} expense records!`);
+    } catch (err) {
+      if (data && data.length > 0) {
+        const csvData = data.map(expense => ({
+          'Date': expense.createdAt ? formatDate(expense.createdAt) : '',
+          'Engineer Name': expense.engineerName || '',
+          'Group': expense.category || expense.group || '',
+          'Category': expense.category || '',
+          'Amount': "Rs " + (expense.amount ?? ''),
+          'Month': expense.month || '',
+          'Period': expense.period || '',
+          'Remarks': expense.remarks || ''
+        }));
+        exportToCSV(csvData, 'Expense_Report.csv');
+        toast.success(`Downloaded ${csvData.length} loaded records!`);
+      } else {
+        toast.error('Failed to export expense report');
+      }
+    } finally {
+      setIsExporting(false);
     }
-    const csvData = data.map(expense => ({
-      'Date': expense.createdAt ? formatDate(expense.createdAt) : '',
-      'Engineer Name': expense.engineerName || '',
-      'Group': expense.category || expense.group || '',
-      'Category': expense.category || '',
-      'Amount': "Rs " + (expense.amount ?? ''),
-      'Month': expense.month || '',
-      'Period': expense.period || '',
-      'Remarks': expense.remarks || ''
-    }));
-    exportToCSV(csvData, 'Expense_Report.csv');
   };
 
   return (
@@ -63,7 +117,7 @@ const ExpenseList = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={2.5}>
               <TextField
                 fullWidth
                 placeholder="Search Remarks..."
@@ -80,49 +134,92 @@ const ExpenseList = () => {
               />
             </Grid>
             
-            <Grid item xs={12} md={9}>
-              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <FilterIcon color="action" fontSize="small" />
-                  <Typography variant="body2" color="text.secondary">Filters:</Typography>
-                </Box>
-                
-                <TextField
-                  size="small"
-                  value={engineerName}
-                  onChange={(e) => setEngineerName(e.target.value)}
-                  placeholder="Engineer Name"
-                  sx={{ minWidth: 150 }}
-                />
+            <Grid item xs={6} md={1.5}>
+              <TextField
+                size="small"
+                fullWidth
+                value={engineerName}
+                onChange={(e) => setEngineerName(e.target.value)}
+                placeholder="Engineer Name"
+              />
+            </Grid>
 
-                <TextField
-                  select
-                  size="small"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  sx={{ minWidth: 140 }}
-                  label="Category"
-                >
-                  <MenuItem value="">All</MenuItem>
-                  {categories.map((c) => (
-                    <MenuItem key={c} value={c}>{c}</MenuItem>
-                  ))}
-                </TextField>
+            <Grid item xs={6} md={1.5}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                label="Category"
+              >
+                <MenuItem value="">All</MenuItem>
+                {categories.map((c) => (
+                  <MenuItem key={c} value={c}>{c}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
 
-                <TextField
-                  select
-                  size="small"
-                  value={month}
-                  onChange={(e) => setMonth(e.target.value)}
-                  sx={{ minWidth: 120 }}
-                  label="Month"
+            <Grid item xs={6} md={1.5}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                label="Month"
+              >
+                <MenuItem value="">All</MenuItem>
+                {months.map((m) => (
+                  <MenuItem key={m} value={m}>{m}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid item xs={6} md={1.5}>
+              <TextField
+                fullWidth
+                label="From Date"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+
+            <Grid item xs={6} md={1.5}>
+              <TextField
+                fullWidth
+                label="To Date"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+
+            <Grid item xs={6} md={2}>
+              <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                {(fromDate || toDate) && (
+                  <Button
+                    size="small"
+                    color="secondary"
+                    onClick={() => { setFromDate(''); setToDate(''); }}
+                    sx={{ minWidth: 'auto', p: 0.5 }}
+                    title="Clear Dates"
+                  >
+                    <ClearIcon fontSize="small" />
+                  </Button>
+                )}
+                <Button 
+                  variant="outlined" 
+                  startIcon={isExporting ? <CircularProgress size={16} /> : <DownloadIcon />} 
+                  size="small" 
+                  onClick={handleDownloadCSV}
+                  disabled={isExporting}
                 >
-                  <MenuItem value="">All</MenuItem>
-                  {months.map((m) => (
-                    <MenuItem key={m} value={m}>{m}</MenuItem>
-                  ))}
-                </TextField>
-                <Button variant="outlined" startIcon={<DownloadIcon />} size="small" onClick={handleDownloadCSV}>
                   CSV
                 </Button>
               </Stack>
@@ -136,7 +233,7 @@ const ExpenseList = () => {
           const isLastElement = index === data.length - 1;
           
           return (
-            <Grid item xs={12} md={6} lg={4} key={expense._id} ref={isLastElement ? lastElementRef : null}>
+            <Grid item xs={12} md={6} lg={4} key={expense._id || index} ref={isLastElement ? lastElementRef : null}>
               <Card sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 4 }, display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
@@ -161,15 +258,21 @@ const ExpenseList = () => {
                     </Grid>
                   </Grid>
 
+                  {expense.createdAt && (
+                    <Box mt={1}>
+                      <Typography variant="caption" color="text.secondary">
+                        Date: {formatDate(expense.createdAt)}
+                      </Typography>
+                    </Box>
+                  )}
+
                   {expense.remarks && (
                     <Box mt={2} p={1} bgcolor="action.hover" borderRadius={1}>
                       <Typography variant="body2" color="text.secondary">Remarks:</Typography>
                       <Typography variant="body2" noWrap>{expense.remarks}</Typography>
                     </Box>
                   )}
-                  
                 </CardContent>
-                
               </Card>
             </Grid>
           );
@@ -187,7 +290,7 @@ const ExpenseList = () => {
       {!loading && data.length === 0 && (
         <EmptyState 
           title="No Expenses Found" 
-          description="We couldn't find any expenses matching your criteria."
+          description="We couldn't find any expenses matching your criteria or date range."
         />
       )}
     </Box>

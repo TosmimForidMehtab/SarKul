@@ -9,7 +9,9 @@ import {
   Chip,
   Button,
   TextField,
-  MenuItem
+  MenuItem,
+  Stack,
+  CircularProgress
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
@@ -18,6 +20,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import DownloadIcon from '@mui/icons-material/Download';
+import ClearIcon from '@mui/icons-material/Clear';
 
 import PageHeader from '../shared/PageHeader';
 import { CardSkeleton } from '../shared/LoadingSkeleton';
@@ -27,6 +30,7 @@ import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
 import { exportToCSV } from '../../utils/exportToCSV';
 import { formatDate } from '../../utils/formatDate';
+import api from '../../services/api';
 import { toast } from 'react-toastify';
 
 const AllEmployee = () => {
@@ -34,7 +38,10 @@ const AllEmployee = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [designationFilter, setDesignationFilter] = useState('');
-  const [sortParam, setSortParam] = useState('-createdAt'); // Default sort
+  const [sortParam, setSortParam] = useState('-createdAt');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
   const debouncedSearch = useDebounce(searchTerm, 500);
 
@@ -43,8 +50,10 @@ const AllEmployee = () => {
     if (debouncedSearch) params.search = debouncedSearch;
     if (statusFilter) params.status = statusFilter.toLowerCase();
     if (designationFilter) params.employeeDesignation = designationFilter;
+    if (fromDate) params.startDate = fromDate;
+    if (toDate) params.endDate = toDate;
     return params;
-  }, [debouncedSearch, statusFilter, designationFilter, sortParam]);
+  }, [debouncedSearch, statusFilter, designationFilter, sortParam, fromDate, toDate]);
 
   const { data: employees, loading, error, hasMore, lastElementRef } = useInfiniteScroll(
     '/engineer',
@@ -71,24 +80,67 @@ const AllEmployee = () => {
 
   useEffect(() => { if (error) toast.error(error); }, [error]);
 
-  const handleDownloadCSV = () => {
-    if (!employees || employees.length === 0) {
-      toast.error('No employee data to download');
-      return;
+  const handleDownloadCSV = async () => {
+    try {
+      setIsExporting(true);
+      toast.info('Fetching full employee report for download...');
+      const res = await api.get('/engineer', {
+        params: {
+          ...queryParams,
+          limit: 'all'
+        }
+      });
+
+      let rawData = res.data?.data?.data || res.data?.data || [];
+      if (!Array.isArray(rawData) && res.data?.message?.[0]?.data) {
+        rawData = res.data.message[0].data;
+      }
+      if (!Array.isArray(rawData) || rawData.length === 0) {
+        rawData = employees;
+      }
+
+      if (!rawData || rawData.length === 0) {
+        toast.error('No employee data to download for selected filters');
+        return;
+      }
+
+      const csvData = rawData.map(emp => ({
+        'Date': emp.createdAt ? formatDate(emp.createdAt) : '',
+        'Employee Code': emp.employeeCode || '',
+        'Employee Name': emp.employeeName || '',
+        'Group / Designation': emp.employeeDesignation || '',
+        'Designation': emp.employeeDesignation || '',
+        'Contact': emp.employeeContact || '',
+        'Email': emp.employeeEmail || '',
+        'Status': emp.status || 'active',
+        'Join Date': emp.joinDate ? formatDate(emp.joinDate) : '',
+        'Salary': emp.salary != null ? 'Rs ' + emp.salary : ''
+      }));
+
+      exportToCSV(csvData, 'Employee_Report.csv');
+      toast.success(`Downloaded ${csvData.length} employee records!`);
+    } catch (err) {
+      if (employees && employees.length > 0) {
+        const csvData = employees.map(emp => ({
+          'Date': emp.createdAt ? formatDate(emp.createdAt) : '',
+          'Employee Code': emp.employeeCode || '',
+          'Employee Name': emp.employeeName || '',
+          'Group / Designation': emp.employeeDesignation || '',
+          'Designation': emp.employeeDesignation || '',
+          'Contact': emp.employeeContact || '',
+          'Email': emp.employeeEmail || '',
+          'Status': emp.status || 'active',
+          'Join Date': emp.joinDate ? formatDate(emp.joinDate) : '',
+          'Salary': emp.salary != null ? 'Rs ' + emp.salary : ''
+        }));
+        exportToCSV(csvData, 'Employee_Report.csv');
+        toast.success(`Downloaded ${csvData.length} loaded records!`);
+      } else {
+        toast.error('Failed to export employee report');
+      }
+    } finally {
+      setIsExporting(false);
     }
-    const csvData = employees.map(emp => ({
-      'Date': emp.createdAt ? formatDate(emp.createdAt) : '',
-      'Employee Code': emp.employeeCode || '',
-      'Employee Name': emp.employeeName || '',
-      'Group / Designation': emp.employeeDesignation || '',
-      'Designation': emp.employeeDesignation || '',
-      'Contact': emp.employeeContact || '',
-      'Email': emp.employeeEmail || '',
-      'Status': emp.status || 'active',
-      'Join Date': emp.joinDate ? formatDate(emp.joinDate) : '',
-      'Salary': emp.salary != null ? 'Rs ' + emp.salary : ''
-    }));
-    exportToCSV(csvData, 'Employee_Report.csv');
   };
 
   return (
@@ -111,7 +163,7 @@ const AllEmployee = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={2.5}>
               <TextField
                 fullWidth
                 label="Search Employees"
@@ -122,7 +174,7 @@ const AllEmployee = () => {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid item xs={6} md={1.5}>
               <TextField
                 select
                 fullWidth
@@ -137,7 +189,7 @@ const AllEmployee = () => {
                 <MenuItem value="resigned">Resigned</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={6} md={2}>
               <TextField
                 fullWidth
                 label="Designation"
@@ -148,7 +200,29 @@ const AllEmployee = () => {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid item xs={6} md={1.5}>
+              <TextField
+                fullWidth
+                label="From Date"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={6} md={1.5}>
+              <TextField
+                fullWidth
+                label="To Date"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={6} md={1.5}>
               <TextField
                 select
                 fullWidth
@@ -161,20 +235,32 @@ const AllEmployee = () => {
                 <MenuItem value="employeeName">Name (A-Z)</MenuItem>
                 <MenuItem value="-employeeName">Name (Z-A)</MenuItem>
                 <MenuItem value="-joinDate">Join Date</MenuItem>
-                <MenuItem value="-salary">Salary (High to Low)</MenuItem>
+                <MenuItem value="-salary">Salary</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} md={2}>
-              <Button
-                variant="outlined"
-                startIcon={<DownloadIcon />}
-                size="small"
-                fullWidth
-                onClick={handleDownloadCSV}
-                sx={{ height: 40 }}
-              >
-                CSV
-              </Button>
+            <Grid item xs={6} md={1.5}>
+              <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                {(fromDate || toDate) && (
+                  <Button
+                    size="small"
+                    color="secondary"
+                    onClick={() => { setFromDate(''); setToDate(''); }}
+                    sx={{ minWidth: 'auto', p: 0.5 }}
+                    title="Clear Dates"
+                  >
+                    <ClearIcon fontSize="small" />
+                  </Button>
+                )}
+                <Button
+                  variant="outlined"
+                  startIcon={isExporting ? <CircularProgress size={16} /> : <DownloadIcon />}
+                  size="small"
+                  onClick={handleDownloadCSV}
+                  disabled={isExporting}
+                >
+                  CSV
+                </Button>
+              </Stack>
             </Grid>
           </Grid>
         </CardContent>
@@ -226,6 +312,14 @@ const AllEmployee = () => {
                     <Typography variant="body2">{emp.employeeEmail || 'N/A'}</Typography>
                   </Box>
 
+                  {emp.createdAt && (
+                    <Box mb={1}>
+                      <Typography variant="caption" color="text.secondary">
+                        Created: {formatDate(emp.createdAt)}
+                      </Typography>
+                    </Box>
+                  )}
+
                   <Box display="flex" flexWrap="wrap" gap={0.5}>
                     {emp.skills && emp.skills.map((skill, idx) => (
                       <Chip key={idx} label={skill} size="small" variant="outlined" />
@@ -257,7 +351,7 @@ const AllEmployee = () => {
       {!loading && employees.length === 0 && (
         <EmptyState
           message="No employees found"
-          subMessage="Try adjusting your filters or search term."
+          subMessage="Try adjusting your filters or date range."
           actionLabel="Add New Employee"
           onAction={() => navigate('/v2/man-power/entry')}
         />

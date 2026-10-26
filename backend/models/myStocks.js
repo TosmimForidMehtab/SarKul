@@ -19,6 +19,6 @@ const myStocksSchema = new Schema({
     warrantyEnd: {
         type: Date,
     },
-});
+}, { timestamps: true });
 
 export const MyStocks = mongoose.model("MyStocks", myStocksSchema);

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, Card, CardContent, Typography, TextField, MenuItem, 
-  Grid, InputAdornment, Stack, Drawer, Button, Chip
+  Grid, InputAdornment, Stack, Drawer, Button, Chip, CircularProgress
 } from '@mui/material';
-import { Search as SearchIcon, Download as DownloadIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Download as DownloadIcon, Clear as ClearIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
 import StatusBadge from '../shared/StatusBadge';
@@ -13,13 +13,17 @@ import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
 import { exportToCSV } from '../../utils/exportToCSV';
 import { formatDate } from '../../utils/formatDate';
+import api from '../../services/api';
 
 const AllStock = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [condition, setCondition] = useState('');
   const [itemCategory, setItemCategory] = useState('');
   const [scrapFilter, setScrapFilter] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [selectedStock, setSelectedStock] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
   
   const debouncedSearch = useDebounce(searchTerm, 500);
 
@@ -28,32 +32,88 @@ const AllStock = () => {
     condition: condition || undefined,
     itemName: itemCategory || undefined,
     scrap: scrapFilter || undefined,
+    startDate: fromDate || undefined,
+    endDate: toDate || undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc'
   });
 
-  const handleDownloadCSV = () => {
-    if (!data || data.length === 0) {
-      toast.error('No data to download');
-      return;
+  const handleDownloadCSV = async () => {
+    try {
+      setIsExporting(true);
+      toast.info('Fetching full stock report for download...');
+      const res = await api.get('/stock', {
+        params: {
+          search: debouncedSearch || undefined,
+          condition: condition || undefined,
+          itemName: itemCategory || undefined,
+          scrap: scrapFilter || undefined,
+          startDate: fromDate || undefined,
+          endDate: toDate || undefined,
+          limit: 'all',
+          sortBy: 'createdAt',
+          sortOrder: 'desc'
+        }
+      });
+
+      let rawData = res.data?.data?.data || res.data?.data || res.data?.stocks || [];
+      if (!Array.isArray(rawData) && res.data?.message?.[0]?.data) {
+        rawData = res.data.message[0].data;
+      }
+      if (!Array.isArray(rawData) || rawData.length === 0) {
+        rawData = data;
+      }
+
+      if (!rawData || rawData.length === 0) {
+        toast.error('No stock data to download for selected filters');
+        return;
+      }
+
+      const csvData = rawData.map(item => ({
+        'Date': item.createdAt ? formatDate(item.createdAt) : '',
+        'Stock Id': item.stockId || '',
+        'Item Name': item.itemName || '',
+        'Group': item.itemPart || item.group || item.groupName || '',
+        'Configuration': item.configuration || '',
+        'Condition': item.condition || '',
+        'Model Number': item.modelNumber || '',
+        'Serial Number': item.serialNumber || '',
+        'Price': item.price !== undefined && item.price !== null ? `Rs ${item.price}` : '',
+        'Status': item.status || 'available',
+        'Office Repair': item.officeRepair || 'no',
+        'Scrap': item.scrap || 'no',
+        'AMC Start Date': item.amcStartDate ? formatDate(item.amcStartDate) : '',
+        'AMC End Date': item.amcEndDate ? formatDate(item.amcEndDate) : ''
+      }));
+
+      exportToCSV(csvData, 'All_Stock.csv');
+      toast.success(`Downloaded ${csvData.length} stock records!`);
+    } catch (err) {
+      if (data && data.length > 0) {
+        const csvData = data.map(item => ({
+          'Date': item.createdAt ? formatDate(item.createdAt) : '',
+          'Stock Id': item.stockId || '',
+          'Item Name': item.itemName || '',
+          'Group': item.itemPart || item.group || item.groupName || '',
+          'Configuration': item.configuration || '',
+          'Condition': item.condition || '',
+          'Model Number': item.modelNumber || '',
+          'Serial Number': item.serialNumber || '',
+          'Price': item.price !== undefined && item.price !== null ? `Rs ${item.price}` : '',
+          'Status': item.status || 'available',
+          'Office Repair': item.officeRepair || 'no',
+          'Scrap': item.scrap || 'no',
+          'AMC Start Date': item.amcStartDate ? formatDate(item.amcStartDate) : '',
+          'AMC End Date': item.amcEndDate ? formatDate(item.amcEndDate) : ''
+        }));
+        exportToCSV(csvData, 'All_Stock.csv');
+        toast.success(`Downloaded ${csvData.length} loaded records!`);
+      } else {
+        toast.error('Failed to export stock report');
+      }
+    } finally {
+      setIsExporting(false);
     }
-    const csvData = data.map(item => ({
-      'Date': item.createdAt ? formatDate(item.createdAt) : '',
-      'Stock Id': item.stockId || '',
-      'Item Name': item.itemName || '',
-      'Group': item.itemPart || item.group || item.groupName || '',
-      'Configuration': item.configuration || '',
-      'Condition': item.condition || '',
-      'Model Number': item.modelNumber || '',
-      'Serial Number': item.serialNumber || '',
-      'Price': item.price !== undefined && item.price !== null ? `Rs ${item.price}` : '',
-      'Status': item.status || 'available',
-      'Office Repair': item.officeRepair || 'no',
-      'Scrap': item.scrap || 'no',
-      'AMC Start Date': item.amcStartDate ? formatDate(item.amcStartDate) : '',
-      'AMC End Date': item.amcEndDate ? formatDate(item.amcEndDate) : ''
-    }));
-    exportToCSV(csvData, 'All_Stock.csv');
   };
 
   useEffect(() => { if (error) toast.error(error); }, [error]);
@@ -65,7 +125,7 @@ const AllStock = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={2.5}>
               <TextField
                 fullWidth
                 placeholder="Search stocks..."
@@ -77,7 +137,7 @@ const AllStock = () => {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid item xs={6} md={1.5}>
               <TextField select fullWidth label="Condition" value={condition} onChange={(e) => setCondition(e.target.value)} size="small">
                 <MenuItem value="">All</MenuItem>
                 <MenuItem value="working">Working</MenuItem>
@@ -85,7 +145,7 @@ const AllStock = () => {
                 <MenuItem value="new">New</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={6} md={2}>
               <TextField select fullWidth label="Item Category" value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} size="small">
                 <MenuItem value="">All Items</MenuItem>
                 <MenuItem value="printer">Printer</MenuItem>
@@ -98,17 +158,56 @@ const AllStock = () => {
                 <MenuItem value="cctv">CCTV</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid item xs={6} md={1.5}>
               <TextField select fullWidth label="Scrap" value={scrapFilter} onChange={(e) => setScrapFilter(e.target.value)} size="small">
                 <MenuItem value="">All</MenuItem>
                 <MenuItem value="yes">Scrap Only</MenuItem>
                 <MenuItem value="no">Exclude Scrap</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} md={2}>
-              <Stack direction="row" spacing={1} justifyContent="flex-end">
-                <Button variant="outlined" startIcon={<DownloadIcon />} size="small" onClick={handleDownloadCSV}>
-                  Download CSV
+            <Grid item xs={6} md={1.5}>
+              <TextField
+                fullWidth
+                label="From Date"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={6} md={1.5}>
+              <TextField
+                fullWidth
+                label="To Date"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={6} md={1.5}>
+              <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                {(fromDate || toDate) && (
+                  <Button
+                    size="small"
+                    color="secondary"
+                    onClick={() => { setFromDate(''); setToDate(''); }}
+                    sx={{ minWidth: 'auto', p: 0.5 }}
+                    title="Clear Dates"
+                  >
+                    <ClearIcon fontSize="small" />
+                  </Button>
+                )}
+                <Button 
+                  variant="outlined" 
+                  startIcon={isExporting ? <CircularProgress size={16} /> : <DownloadIcon />} 
+                  size="small" 
+                  onClick={handleDownloadCSV}
+                  disabled={isExporting}
+                >
+                  CSV
                 </Button>
               </Stack>
             </Grid>
@@ -121,7 +220,7 @@ const AllStock = () => {
           const isLast = data.length === index + 1;
           const groupName = stock.itemPart || stock.group || stock.groupName || '';
           return (
-            <Grid item xs={12} sm={6} md={4} key={stock.stockId || stock._id} ref={isLast ? lastElementRef : null}>
+            <Grid item xs={12} sm={6} md={4} key={stock.stockId || stock._id || index} ref={isLast ? lastElementRef : null}>
               <Card 
                 onClick={() => setSelectedStock(stock)}
                 sx={{ 
@@ -152,6 +251,11 @@ const AllStock = () => {
                   <Typography variant="body2" color="text.secondary">
                     Serial: {stock.serialNumber}
                   </Typography>
+                  {stock.createdAt && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Date: {formatDate(stock.createdAt)}
+                    </Typography>
+                  )}
                   <Stack direction="row" spacing={1} mt={2}>
                     <Chip label={`₹${stock.price}`} size="small" color="success" variant="outlined" />
                   </Stack>
@@ -165,7 +269,7 @@ const AllStock = () => {
       {loading && <Box mt={3}><CardSkeleton count={3} /></Box>}
       
       {!loading && data.length === 0 && (
-        <EmptyState title="No stocks found" description="Try adjusting your filters or search term." />
+        <EmptyState title="No stocks found" description="Try adjusting your filters or date range." />
       )}
       
       {!loading && !hasMore && data.length > 0 && (

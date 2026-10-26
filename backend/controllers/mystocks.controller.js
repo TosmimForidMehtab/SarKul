@@ -12,7 +12,7 @@ export const getMyStocks = async (req, res, next) => {
             .sort(sort)
             .skip(skip)
             .limit(limit)
-            .select("-_id serialNumber totalPrice brand price warrantyStart warrantyEnd itemName");
+            .select("_id serialNumber totalPrice brand price warrantyStart warrantyEnd itemName createdAt");
 
         const total = await MyStocks.countDocuments(filter);
 

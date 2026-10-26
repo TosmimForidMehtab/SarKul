@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, Card, CardContent, Typography, TextField, MenuItem, 
-  Grid, InputAdornment, Stack, Button
+  Grid, InputAdornment, Stack, Button, CircularProgress
 } from '@mui/material';
-import { Search as SearchIcon, Download as DownloadIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Download as DownloadIcon, Clear as ClearIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
 import StatusBadge from '../shared/StatusBadge';
@@ -13,11 +13,15 @@ import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
 import { exportToCSV } from '../../utils/exportToCSV';
 import { formatDate } from '../../utils/formatDate';
+import api from '../../services/api';
 
 const CallRegister = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState('');
   const [category, setCategory] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
   
   const debouncedSearch = useDebounce(searchTerm, 500);
 
@@ -25,43 +29,109 @@ const CallRegister = () => {
     search: debouncedSearch,
     status: status || undefined,
     category: category || undefined,
+    startDate: fromDate || undefined,
+    endDate: toDate || undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc'
   });
 
-  const handleDownloadCSV = () => {
-    if (!data || data.length === 0) {
-      toast.error('No data to download');
-      return;
-    }
-    const csvData = data.map(call => {
-      const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
-        ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
-        : (call.engineerName || '');
+  const handleDownloadCSV = async () => {
+    try {
+      setIsExporting(true);
+      toast.info('Fetching full report for download...');
+      const res = await api.get('/call', {
+        params: {
+          search: debouncedSearch || undefined,
+          status: status || undefined,
+          category: category || undefined,
+          startDate: fromDate || undefined,
+          endDate: toDate || undefined,
+          limit: 'all',
+          sortBy: 'createdAt',
+          sortOrder: 'desc'
+        }
+      });
 
-      return {
-        'Date': call.createdAt ? formatDate(call.createdAt) : '',
-        'Call Id': call.callId || call.callNumber || '',
-        'Customer Name': call.customerName || '',
-        'Customer Code': call.customerCode || '',
-        'User Name': call.userName || '',
-        'Contact Number': call.contactNumber || '',
-        'Customer Email': call.customerEmail || '',
-        'Customer Address': call.customerAddress || '',
-        'Problem Description': call.problemDescription || '',
-        'Engineers Assigned': engineer,
-        'Serial Number': call.serialNumber || '',
-        'Status': call.status || '',
-        'Category': call.category || '',
-        'Group': call.itemName || call.group || call.groupName || '',
-        'Item Model Number': call.itemModelNumber || '',
-        'Customer Remark': call.customerRemark || '',
-        'Engineer Remark': call.engineerRemark || '',
-        'Part Status': call.itemStatus || '',
-        'Closed Date': call.closedAt ? formatDate(call.closedAt) : (call.status === 'completed' && call.updatedAt ? formatDate(call.updatedAt) : '')
-      };
-    });
-    exportToCSV(csvData, 'Call_Register.csv');
+      let rawData = res.data?.data?.data || res.data?.data || res.data?.calls || [];
+      if (!Array.isArray(rawData) && res.data?.message?.[0]?.data) {
+        rawData = res.data.message[0].data;
+      }
+      if (!Array.isArray(rawData) || rawData.length === 0) {
+        rawData = data; // Fallback to loaded data
+      }
+
+      if (!rawData || rawData.length === 0) {
+        toast.error('No data to download for selected filters');
+        return;
+      }
+
+      const csvData = rawData.map(call => {
+        const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
+          ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
+          : (call.engineerName || '');
+
+        return {
+          'Date': call.createdAt ? formatDate(call.createdAt) : '',
+          'Call Id': call.callId || call.callNumber || '',
+          'Customer Name': call.customerName || '',
+          'Customer Code': call.customerCode || '',
+          'User Name': call.userName || '',
+          'Contact Number': call.contactNumber || '',
+          'Customer Email': call.customerEmail || '',
+          'Customer Address': call.customerAddress || '',
+          'Problem Description': call.problemDescription || '',
+          'Engineers Assigned': engineer,
+          'Serial Number': call.serialNumber || '',
+          'Status': call.status || '',
+          'Category': call.category || '',
+          'Group': call.itemName || call.group || call.groupName || '',
+          'Item Model Number': call.itemModelNumber || '',
+          'Customer Remark': call.customerRemark || '',
+          'Engineer Remark': call.engineerRemark || '',
+          'Part Status': call.itemStatus || '',
+          'Closed Date': call.closedAt ? formatDate(call.closedAt) : (call.status === 'completed' && call.updatedAt ? formatDate(call.updatedAt) : '')
+        };
+      });
+
+      exportToCSV(csvData, 'Call_Register.csv');
+      toast.success(`Downloaded ${csvData.length} records successfully!`);
+    } catch (err) {
+      if (data && data.length > 0) {
+        const csvData = data.map(call => {
+          const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
+            ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
+            : (call.engineerName || '');
+
+          return {
+            'Date': call.createdAt ? formatDate(call.createdAt) : '',
+            'Call Id': call.callId || call.callNumber || '',
+            'Customer Name': call.customerName || '',
+            'Customer Code': call.customerCode || '',
+            'User Name': call.userName || '',
+            'Contact Number': call.contactNumber || '',
+            'Customer Email': call.customerEmail || '',
+            'Customer Address': call.customerAddress || '',
+            'Problem Description': call.problemDescription || '',
+            'Engineers Assigned': engineer,
+            'Serial Number': call.serialNumber || '',
+            'Status': call.status || '',
+            'Category': call.category || '',
+            'Group': call.itemName || call.group || call.groupName || '',
+            'Item Model Number': call.itemModelNumber || '',
+            'Customer Remark': call.customerRemark || '',
+            'Engineer Remark': call.engineerRemark || '',
+            'Part Status': call.itemStatus || '',
+            'Closed Date': call.closedAt ? formatDate(call.closedAt) : (call.status === 'completed' && call.updatedAt ? formatDate(call.updatedAt) : '')
+          };
+        });
+        exportToCSV(csvData, 'Call_Register.csv');
+        toast.success(`Downloaded ${csvData.length} loaded records!`);
+      } else {
+        toast.error('Failed to export report');
+      }
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   useEffect(() => { if (error) toast.error(error); }, [error]);
@@ -73,7 +143,7 @@ const CallRegister = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
                 placeholder="Search calls by number, customer, etc."
@@ -85,7 +155,7 @@ const CallRegister = () => {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={6} md={2}>
               <TextField select fullWidth label="Status" value={status} onChange={(e) => setStatus(e.target.value)} size="small">
                 <MenuItem value="">All Statuses</MenuItem>
                 <MenuItem value="pending">Pending</MenuItem>
@@ -95,7 +165,7 @@ const CallRegister = () => {
                 <MenuItem value="oemPending">OEM Pending</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={6} md={2}>
               <TextField select fullWidth label="Category" value={category} onChange={(e) => setCategory(e.target.value)} size="small">
                 <MenuItem value="">All Categories</MenuItem>
                 <MenuItem value="desktop">Desktop</MenuItem>
@@ -109,10 +179,49 @@ const CallRegister = () => {
                 <MenuItem value="activity">Activity</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} md={2}>
-              <Stack direction="row" justifyContent="flex-end">
-                <Button variant="outlined" startIcon={<DownloadIcon />} size="small" onClick={handleDownloadCSV}>
-                  Download CSV
+            <Grid item xs={6} md={2}>
+              <TextField
+                fullWidth
+                label="From Date"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={6} md={2}>
+              <TextField
+                fullWidth
+                label="To Date"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} md={1}>
+              <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                {(fromDate || toDate) && (
+                  <Button
+                    size="small"
+                    color="secondary"
+                    onClick={() => { setFromDate(''); setToDate(''); }}
+                    sx={{ minWidth: 'auto', p: 0.5 }}
+                    title="Clear Dates"
+                  >
+                    <ClearIcon fontSize="small" />
+                  </Button>
+                )}
+                <Button 
+                  variant="outlined" 
+                  startIcon={isExporting ? <CircularProgress size={16} /> : <DownloadIcon />} 
+                  size="small" 
+                  onClick={handleDownloadCSV}
+                  disabled={isExporting}
+                >
+                  CSV
                 </Button>
               </Stack>
             </Grid>
@@ -125,7 +234,7 @@ const CallRegister = () => {
           const isLast = data.length === index + 1;
           const groupName = call.itemName || call.group || call.groupName || '';
           return (
-            <Grid item xs={12} sm={6} md={4} key={call.callId || call._id} ref={isLast ? lastElementRef : null}>
+            <Grid item xs={12} sm={6} md={4} key={call.callId || call._id || index} ref={isLast ? lastElementRef : null}>
               <Card sx={{ 
                 height: '100%', 
                 transition: '0.3s', 
@@ -149,6 +258,11 @@ const CallRegister = () => {
                       Group: {groupName}
                     </Typography>
                   )}
+                  {call.createdAt && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Date: {formatDate(call.createdAt)}
+                    </Typography>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
@@ -159,7 +273,7 @@ const CallRegister = () => {
       {loading && <Box mt={3}><CardSkeleton count={3} /></Box>}
       
       {!loading && data.length === 0 && (
-        <EmptyState title="No calls found" description="Try adjusting your filters or search term." />
+        <EmptyState title="No calls found" description="Try adjusting your filters or date range." />
       )}
       
       {!loading && !hasMore && data.length > 0 && (
