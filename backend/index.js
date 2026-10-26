@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.js";
 import { userRoutes, callRoutes, engineerRoutes, stockRoutes, transactionRoutes, mystocksRoutes, groupRoutes, expenseRoutes, dashboardRoutes } from "./routes/index.js";
 
+console.log("added latest");
+
 const app = express();
 dotenv.config();
 app.use(cors());
@@ -43,5 +45,3 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-
-

@@ -13,6 +13,8 @@ import ModernApp from './ModernApp'; // To be created
 
 import ModernLogin from './components-v2/Login/Login';
 
+console.log("added latest");
+
 const RootComponent = () => {
   const { uiVersion } = useUIVersion();
   const token = sessionStorage.getItem("accessToken");

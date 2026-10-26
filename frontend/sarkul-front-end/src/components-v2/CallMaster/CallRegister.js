@@ -52,6 +52,7 @@ const getCloseDate = (call) => {
 };
 
 const CallRegister = () => {
+  console.log("added latest");
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState('');
   const [category, setCategory] = useState('');

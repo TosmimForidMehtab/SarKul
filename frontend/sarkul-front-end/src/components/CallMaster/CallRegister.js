@@ -9,6 +9,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import ExcelJS from 'exceljs';
 
 function CallRegister() {
+  console.log("added latest");
   const [arr, setArr] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [state, setState] = useState({ date: { from: '', to: '', disabled: true } });
