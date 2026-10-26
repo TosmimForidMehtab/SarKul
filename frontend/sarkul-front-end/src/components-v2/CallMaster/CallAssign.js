@@ -23,7 +23,7 @@ const CallAssign = () => {
       try {
         const [callsRes, engRes] = await Promise.all([
           api.get('/call?status=pending&limit=100'),
-          api.get('/engineer')
+          api.get('/engineer?status=active&limit=1000')
         ]);
         let calls = callsRes.data.data || callsRes.data;
         if (calls && !Array.isArray(calls) && Array.isArray(calls.data)) calls = calls.data;
@@ -59,6 +59,7 @@ const CallAssign = () => {
     try {
       await api.post('/call/assign', { 
         callId: selectedCall.callId || selectedCall.callNumber,
+        engineerName: selectedEngineer.employeeName,
         engineerCode: selectedEngineer.employeeCode
       });
       toast.success('Call assigned successfully!');

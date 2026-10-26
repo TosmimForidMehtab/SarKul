@@ -25,7 +25,7 @@ const CallDetails = () => {
   useEffect(() => {
     const fetchEngineers = async () => {
       try {
-        const res = await api.get('/engineer');
+        const res = await api.get('/engineer?status=active&limit=1000');
         let engData = res.data.data || res.data;
         if (engData && !Array.isArray(engData) && Array.isArray(engData.data)) engData = engData.data;
         setEngineers(Array.isArray(engData) ? engData : []);

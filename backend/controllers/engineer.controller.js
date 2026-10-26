@@ -104,7 +104,7 @@ export const updateEngineer = async (req, res) => {
             engineer.resignedAt = resignedAt;
         }
         if (status) {
-            engineer.status = status;
+            engineer.status = status.toLowerCase();
         }
         if (incrementDueDate) {
             engineer.incrementDueDate = incrementDueDate;
@@ -188,6 +188,27 @@ export const getAllEngineers = async (req, res) => {
     try {
         const { filter, sort, page, limit, skip } = parseQueryParams(req.query, ["employeeName", "employeeCode", "employeeContact", "employeeEmail"]);
         
+        if (req.query.status) {
+            const statusVal = req.query.status.toLowerCase();
+            delete filter.status;
+            if (statusVal === "active") {
+                const activeConditions = [
+                    { status: { $regex: /^active$/i } },
+                    { status: { $exists: false } },
+                    { status: null },
+                    { status: "" },
+                ];
+                if (filter.$or) {
+                    filter.$and = [{ $or: filter.$or }, { $or: activeConditions }];
+                    delete filter.$or;
+                } else {
+                    filter.$or = activeConditions;
+                }
+            } else {
+                filter.status = { $regex: new RegExp(`^${statusVal}$`, "i") };
+            }
+        }
+
         const total = await Engineer.countDocuments(filter);
         
         const engineers = await Engineer.aggregate([
@@ -199,12 +220,18 @@ export const getAllEngineers = async (req, res) => {
             { $limit: limit },
         ]);
         
-        const result = formatPaginatedResponse(engineers, total, page, limit);
+        const formattedEngineers = engineers.map(eng => ({
+            ...eng,
+            status: eng.status || "active"
+        }));
+        
+        const result = formatPaginatedResponse(formattedEngineers, total, page, limit);
         return res.status(200).json(new ApiResponse(200, result, "Engineers retrieved successfully"));
     } catch (error) {
         return res.status(error.statusCode || 500).json(new ApiResponse(error.statusCode, null, error.message || "Something went wrong while retrieving Engineers"));
     }
 };
+
 export const lookupEngineers = async (req, res) => {
     try {
         const query = req.query.q || "";
@@ -214,7 +241,7 @@ export const lookupEngineers = async (req, res) => {
                 { employeeName: { $regex: query, $options: "i" } },
                 { employeeCode: { $regex: query, $options: "i" } }
             ]
-        }).select("employeeName employeeCode").limit(limit);
+        }).select("employeeName employeeCode status").limit(limit);
         return res.status(200).json(new ApiResponse(200, engineers, "Lookup successful"));
     } catch (error) {
         return res.status(error.statusCode || 500).json(new ApiResponse(error.statusCode, null, error.message));

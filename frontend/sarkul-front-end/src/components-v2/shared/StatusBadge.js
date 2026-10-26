@@ -1,9 +1,9 @@
 import React from 'react';
 import { Chip } from '@mui/material';
 
-const StatusBadge = ({ status }) => {
+const StatusBadge = ({ status, customColor }) => {
   const getStatusConfig = (s) => {
-    const rawLabel = s || 'Unknown';
+    const rawLabel = s || 'Active';
     const label = rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1);
     
     switch (s?.toLowerCase()) {
@@ -16,6 +16,14 @@ const StatusBadge = ({ status }) => {
       case 'new':
       case 'repaired':
         return { color: 'success', label };
+      case 'active':
+        return { color: 'success', label: 'Active' };
+      case 'inactive':
+        return { color: 'error', label: 'Inactive' };
+      case 'resigned':
+        return { color: 'warning', label: 'Resigned' };
+      case 'assigned':
+        return { color: 'info', label: 'Assigned' };
       case 'faulty':
       case 'damaged':
       case 'cancelled':
@@ -23,9 +31,6 @@ const StatusBadge = ({ status }) => {
       case 'scrapped':
       case 'unavailable':
         return { color: 'error', label };
-      case 'active':
-      case 'assigned':
-        return { color: 'info', label };
       case 'maintenance':
       case 'oempending':
         return { color: 'secondary', label };
@@ -39,7 +44,7 @@ const StatusBadge = ({ status }) => {
   return (
     <Chip 
       label={config.label} 
-      color={config.color} 
+      color={customColor || config.color} 
       size="small" 
       sx={{ fontWeight: 'bold' }} 
     />

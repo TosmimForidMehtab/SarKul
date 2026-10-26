@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -7,7 +7,6 @@ import {
   Grid,
   Avatar,
   Chip,
-  IconButton,
   Button,
   TextField,
   MenuItem
@@ -25,7 +24,6 @@ import EmptyState from '../shared/EmptyState';
 import StatusBadge from '../shared/StatusBadge';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
-import api from '../../services/api';
 import { toast } from 'react-toastify';
 
 const AllEmployee = () => {
@@ -40,7 +38,7 @@ const AllEmployee = () => {
   const queryParams = useMemo(() => {
     const params = { sort: sortParam };
     if (debouncedSearch) params.search = debouncedSearch;
-    if (statusFilter) params.status = statusFilter;
+    if (statusFilter) params.status = statusFilter.toLowerCase();
     if (designationFilter) params.employeeDesignation = designationFilter;
     return params;
   }, [debouncedSearch, statusFilter, designationFilter, sortParam]);
@@ -111,9 +109,9 @@ const AllEmployee = () => {
                 size="small"
               >
                 <MenuItem value="">All Statuses</MenuItem>
-                <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Inactive">Inactive</MenuItem>
-                <MenuItem value="Resigned">Resigned</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value="resigned">Resigned</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>
@@ -151,6 +149,7 @@ const AllEmployee = () => {
       <Grid container spacing={3}>
         {employees.map((emp, index) => {
           const isLast = employees.length === index + 1;
+          const currentStatus = emp.status || 'active';
           return (
             <Grid
               item
@@ -176,7 +175,7 @@ const AllEmployee = () => {
                         </Typography>
                       </Box>
                     </Box>
-                    <StatusBadge status={emp.status} customColor={getStatusColor(emp.status)} />
+                    <StatusBadge status={currentStatus} customColor={getStatusColor(currentStatus)} />
                   </Box>
 
                   <Typography variant="subtitle2" color="primary" gutterBottom>
@@ -240,5 +239,3 @@ const AllEmployee = () => {
 };
 
 export default AllEmployee;
-
-

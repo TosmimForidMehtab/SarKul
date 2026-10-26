@@ -251,31 +251,44 @@ export const getCompletedCalls = async (req, res) => {
 
 export const assignCallToEngineer = async (req, res) => {
     try {
-        const { callId, engineerName: employeeName } = req.body;
+        const { callId, callNumber, engineerName, employeeName, engineerCode } = req.body;
+        const targetCallId = callId || callNumber;
+        const targetName = engineerName || employeeName;
 
-        const call = await Call.findOne({ callId });
+        const call = await Call.findOne({
+            $or: [{ callId: targetCallId }, { callNumber: targetCallId }]
+        });
         if (!call) {
-            throw new ApiError(404, `Call with id ${callId} not found`);
+            throw new ApiError(404, `Call with id ${targetCallId} not found`);
         }
         if (call.status !== "pending") {
-            throw new ApiError(400, `Call with id ${callId} is already closed`);
+            throw new ApiError(400, `Call with id ${targetCallId} is already closed`);
         }
-        const engineer = await Engineer.findOne({ employeeName });
+
+        let engineer = null;
+        if (targetName) {
+            engineer = await Engineer.findOne({
+                employeeName: { $regex: new RegExp(`^${targetName.trim()}$`, "i") }
+            });
+        } else if (engineerCode) {
+            engineer = await Engineer.findOne({
+                employeeCode: parseInt(engineerCode, 10) || engineerCode
+            });
+        }
+
         if (!engineer) {
             throw new ApiError(
                 404,
-                `Engineer with name ${employeeName} not found`
+                `Engineer ${targetName || engineerCode} not found`
             );
         }
         if (call.engineersAssigned.includes(engineer._id)) {
             throw new ApiError(
                 400,
-                `Engineer with name ${employeeName} is already assigned to this call`
+                `Engineer with name ${engineer.employeeName} is already assigned to this call`
             );
         }
-        // if (engineer.assignedTo) {
-        //     throw new ApiError(400, `Engineer with name ${employeeName} is already assigned to another call`);
-        // }
+
         call.engineersAssigned.push(engineer._id);
         await call.save();
         engineer.assignedTo.push(call.callId);

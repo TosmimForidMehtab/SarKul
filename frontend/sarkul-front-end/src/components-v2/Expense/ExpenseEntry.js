@@ -30,7 +30,7 @@ const ExpenseEntry = () => {
   
   const fetchEngineers = async () => {
     try {
-      const res = await api.get(`/engineer?status=active`);
+      const res = await api.get(`/engineer?status=active&limit=1000`);
       setEngineerOptions(Array.isArray(res.data.data) ? res.data.data : (res.data.data?.data || []));
     } catch (err) {
       console.error(err);

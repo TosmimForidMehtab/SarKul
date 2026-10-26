@@ -52,7 +52,7 @@ const ManpowerInfo = () => {
     const fetchOptions = async () => {
       setLoadingOptions(true);
       try {
-        const res = await api.get(`/engineer?status=active&limit=50&search=${debouncedSearch}`);
+        const res = await api.get(`/engineer?limit=100&search=${debouncedSearch}`);
         setOptions(Array.isArray(res.data.data) ? res.data.data : (res.data.data?.data || []));
       } catch (error) {
         console.error('Failed to fetch lookup data', error);
@@ -100,11 +100,6 @@ const ManpowerInfo = () => {
     } finally {
       setLoadingDetails(false);
     }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return formatDate(dateString);
   };
 
   const getStatusColor = (status) => {
@@ -193,8 +188,8 @@ const ManpowerInfo = () => {
                 </Typography>
                 <Box mb={2}>
                   <StatusBadge
-                    status={employeeDetails.status}
-                    customColor={getStatusColor(employeeDetails.status)}
+                    status={employeeDetails.status || 'active'}
+                    customColor={getStatusColor(employeeDetails.status || 'active')}
                   />
                 </Box>
                 <Typography variant="body1" color="primary" gutterBottom>
@@ -327,5 +322,3 @@ const ManpowerInfo = () => {
 };
 
 export default ManpowerInfo;
-
-
