@@ -15,6 +15,42 @@ import { exportToCSV } from '../../utils/exportToCSV';
 import { formatDate } from '../../utils/formatDate';
 import api from '../../services/api';
 
+const formatAction = (call) => {
+  if (call.action) {
+    const actionMap = {
+      'serviceAndClose': 'Service and Close',
+      'cancelAndClose': 'Cancel and Close',
+      'customerDependence': 'Customer Dependence',
+      'oemPending': 'OEM Pending',
+      'replace': 'Part Replace',
+      'required': 'Part Required',
+      'pending': 'Part Pending',
+      'chargeable': 'Chargeable'
+    };
+    return actionMap[call.action] || call.action;
+  }
+  if (call.itemStatus) {
+    const actionMap = {
+      'serviceAndClose': 'Service and Close',
+      'cancelAndClose': 'Cancel and Close',
+      'customerDependence': 'Customer Dependence',
+      'oemPending': 'OEM Pending',
+      'replace': 'Part Replace',
+      'required': 'Part Required',
+      'pending': 'Part Pending',
+      'chargeable': 'Chargeable'
+    };
+    return actionMap[call.itemStatus] || call.itemStatus;
+  }
+  return 'Closed';
+};
+
+const getCloseDate = (call) => {
+  if (call.closedAt) return formatDate(call.closedAt);
+  if (call.status === 'completed' && call.updatedAt) return formatDate(call.updatedAt);
+  return 'N/A';
+};
+
 const ClosedCalls = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -31,6 +67,42 @@ const ClosedCalls = () => {
     sortBy: 'updatedAt',
     sortOrder: 'desc'
   });
+
+  const mapClosedCallToRow = (call) => {
+    const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
+      ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
+      : (call.engineerName || '');
+
+    const actionText = formatAction(call);
+    const closeDateText = getCloseDate(call);
+    const callLogText = call.problemDescription || call.customerRemark || '';
+
+    return {
+      'Date': call.createdAt ? formatDate(call.createdAt) : '',
+      'Call Id': call.callId || call.callNumber || '',
+      'Customer Name': call.customerName || '',
+      'Customer Code': call.customerCode || '',
+      'User Name': call.userName || '',
+      'Contact Number': call.contactNumber || '',
+      'Customer Email': call.customerEmail || '',
+      'Customer Address': call.customerAddress || '',
+      'Problem Description': call.problemDescription || '',
+      'Call Log': callLogText,
+      'Call Log Date': call.createdAt ? formatDate(call.createdAt) : '',
+      'Engineers Assigned': engineer,
+      'Serial Number': call.serialNumber || '',
+      'Status': call.status || 'completed',
+      'Category': call.category || '',
+      'Group': call.itemName || call.group || call.groupName || '',
+      'Item Model Number': call.itemModelNumber || '',
+      'Action': actionText,
+      'Part Status': call.itemStatus || '',
+      'Close Date': closeDateText,
+      'Closed Date': closeDateText,
+      'Customer Remark': call.customerRemark || '',
+      'Engineer Remark': call.engineerRemark || ''
+    };
+  };
 
   const handleDownloadCSV = async () => {
     try {
@@ -61,65 +133,12 @@ const ClosedCalls = () => {
         return;
       }
 
-      const csvData = rawData.map(call => {
-        const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
-          ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
-          : (call.engineerName || '');
-
-        return {
-          'Date': call.createdAt ? formatDate(call.createdAt) : '',
-          'Call Id': call.callId || call.callNumber || '',
-          'Customer Name': call.customerName || '',
-          'Customer Code': call.customerCode || '',
-          'User Name': call.userName || '',
-          'Contact Number': call.contactNumber || '',
-          'Customer Email': call.customerEmail || '',
-          'Customer Address': call.customerAddress || '',
-          'Problem Description': call.problemDescription || '',
-          'Engineers Assigned': engineer,
-          'Serial Number': call.serialNumber || '',
-          'Status': call.status || 'completed',
-          'Category': call.category || '',
-          'Group': call.itemName || call.group || call.groupName || '',
-          'Item Model Number': call.itemModelNumber || '',
-          'Closed Date': call.closedAt ? formatDate(call.closedAt) : (call.updatedAt ? formatDate(call.updatedAt) : ''),
-          'Customer Remark': call.customerRemark || '',
-          'Engineer Remark': call.engineerRemark || '',
-          'Part Status': call.itemStatus || ''
-        };
-      });
-
+      const csvData = rawData.map(mapClosedCallToRow);
       exportToCSV(csvData, 'Closed_Calls.csv');
       toast.success(`Downloaded ${csvData.length} closed calls!`);
     } catch (err) {
       if (data && data.length > 0) {
-        const csvData = data.map(call => {
-          const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
-            ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
-            : (call.engineerName || '');
-
-          return {
-            'Date': call.createdAt ? formatDate(call.createdAt) : '',
-            'Call Id': call.callId || call.callNumber || '',
-            'Customer Name': call.customerName || '',
-            'Customer Code': call.customerCode || '',
-            'User Name': call.userName || '',
-            'Contact Number': call.contactNumber || '',
-            'Customer Email': call.customerEmail || '',
-            'Customer Address': call.customerAddress || '',
-            'Problem Description': call.problemDescription || '',
-            'Engineers Assigned': engineer,
-            'Serial Number': call.serialNumber || '',
-            'Status': call.status || 'completed',
-            'Category': call.category || '',
-            'Group': call.itemName || call.group || call.groupName || '',
-            'Item Model Number': call.itemModelNumber || '',
-            'Closed Date': call.closedAt ? formatDate(call.closedAt) : (call.updatedAt ? formatDate(call.updatedAt) : ''),
-            'Customer Remark': call.customerRemark || '',
-            'Engineer Remark': call.engineerRemark || '',
-            'Part Status': call.itemStatus || ''
-          };
-        });
+        const csvData = data.map(mapClosedCallToRow);
         exportToCSV(csvData, 'Closed_Calls.csv');
         toast.success(`Downloaded ${csvData.length} loaded records!`);
       } else {
@@ -244,14 +263,22 @@ const ClosedCalls = () => {
                       Group: {groupName}
                     </Typography>
                   )}
+                  <Typography variant="body2" color="secondary.main" fontWeight="medium" gutterBottom>
+                    Action: {formatAction(call)}
+                  </Typography>
                   {call.createdAt && (
                     <Typography variant="caption" color="text.secondary" display="block">
-                      Created: {formatDate(call.createdAt)}
+                      Call Log Date: {formatDate(call.createdAt)}
                     </Typography>
                   )}
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Closed On: {call.closedAt ? formatDate(call.closedAt) : (call.updatedAt ? formatDate(call.updatedAt) : 'N/A')}
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Close Date: {getCloseDate(call)}
                   </Typography>
+                  {call.problemDescription && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, p: 0.7, bgcolor: 'action.hover', borderRadius: 1 }} noWrap>
+                      Log: {call.problemDescription}
+                    </Typography>
+                  )}
                 </CardContent>
               </Card>
             </Grid>

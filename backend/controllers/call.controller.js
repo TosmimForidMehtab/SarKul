@@ -141,10 +141,31 @@ export const updateCall = async (req, res) => {
             customerRemark,
             engineerRemark,
             partStatus: itemStatus,
+            action,
+            status,
         } = req.body;
+
+        const updateData = {};
+        if (customerRemark !== undefined) updateData.customerRemark = customerRemark;
+        if (engineerRemark !== undefined) updateData.engineerRemark = engineerRemark;
+        if (itemStatus !== undefined) updateData.itemStatus = itemStatus;
+        if (action !== undefined) updateData.action = action;
+        else if (itemStatus !== undefined) updateData.action = itemStatus;
+
+        if (status) {
+            updateData.status = status;
+            if (status === "completed") {
+                updateData.closedAt = new Date();
+            }
+        }
+        if (itemStatus === "serviceAndClose" || itemStatus === "cancelAndClose") {
+            updateData.status = "completed";
+            updateData.closedAt = new Date();
+        }
+
         const call = await Call.findOneAndUpdate(
-            { callId },
-            { customerRemark, engineerRemark, itemStatus },
+            { $or: [{ callId }, { callNumber: callId }] },
+            updateData,
             { new: true }
         );
         return res
@@ -326,6 +347,10 @@ export const closeCall = async (req, res) => {
             throw new ApiError(400, `Call with id ${callId} is already closed`);
         }
         call.status = "completed";
+        call.closedAt = new Date();
+        if (!call.action) {
+            call.action = call.itemStatus || "Closed";
+        }
         call.engineersAssigned.forEach(async (engineerId) => {
             const engineer = await Engineer.findById(engineerId);
             engineer.assignedTo = [];

@@ -1,25 +1,24 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import SideBar from '../Sidebar/SideBar';
 import axios from 'axios';
 import CallCard from '../Helper/CallCard/CallCard';
 import Loader from '../Loader';
-import { Link } from 'react-router-dom';
 import SideBarMain from '../Sidebar/SideBarMain';
-import { Button, Divider, IconButton, Stack, Typography } from '@mui/material';
+import { Button, IconButton, Stack, Typography } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
-import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
-
 
 function CallRegister() {
   const [arr, setArr] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [state, setState] = useState({ date: { from: '', to: '', disabled: true } });
+
   useEffect(() => {
     getData();
-  }, [])
+  }, []);
+
   async function getData() {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       let token = sessionStorage.getItem("accessToken");
       let config = {
@@ -27,68 +26,69 @@ function CallRegister() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
-      }
-      let url = 'https://sarkultechapi.onrender.com/api/v1/call'
+      };
+      let url = 'https://sarkultechapi.onrender.com/api/v1/call?limit=10000';
       let response = await axios.get(url, config);
       let calls = response.data.data?.data || response.data.data;
       setArr(Array.isArray(calls) ? calls : []);
-
-      setIsLoading(false)
-    }
-    catch (error) {
-      alert(error.response?.data.message);
-      // console.log(error)
-      setIsLoading(false)
+      setIsLoading(false);
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to fetch calls');
+      setIsLoading(false);
     }
   }
-
 
   const getFilteredData = async (startDate, endDate) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      console.log(startDate, '........', endDate);
       let token = sessionStorage.getItem("accessToken");
       let config = {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
-      }
-      let url = `https://sarkultechapi.onrender.com/api/v1/call?startDate=${startDate}&endDate=${endDate}`
+      };
+      let url = `https://sarkultechapi.onrender.com/api/v1/call?startDate=${startDate}&endDate=${endDate}&limit=10000`;
       let response = await axios.get(url, config);
       let calls = response.data.data?.data || response.data.data;
       setArr(Array.isArray(calls) ? calls : []);
-
-
-      setIsLoading(false)
+      setIsLoading(false);
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to fetch filtered calls');
+      setIsLoading(false);
     }
-    catch (error) {
-      alert(error.response?.data.message);
-
-      setIsLoading(false)
-    }
-
-  }
+  };
 
   function convertDateFormat(inputDate) {
-
+    if (!inputDate) return '';
     var parts = inputDate.split("-");
+    if (parts.length < 3) return inputDate;
     var outputDate = parts[2] + "-" + parts[1] + "-" + parts[0];
-
     return outputDate;
   }
 
+  const formatAction = (call) => {
+    if (call.action) return call.action;
+    if (call.itemStatus) return call.itemStatus;
+    return call.status === 'completed' ? 'Closed' : (call.status || 'Pending');
+  };
+
+  const getCloseDate = (call) => {
+    if (call.closedAt) return convertDateFormat(String(call.closedAt).substring(0, 10));
+    if (call.status === 'completed' && call.updatedAt) return convertDateFormat(String(call.updatedAt).substring(0, 10));
+    return 'Pending';
+  };
 
   const downloadExcel = async () => {
     var currentDate = new Date();
     var year = currentDate.getFullYear();
     var month = currentDate.getMonth() + 1;
     var day = currentDate.getDate();
-
     var formattedDate = day + "/" + month + "/" + year;
+
     const arrWithoutUnwantedFields = arr.map(({ _id, updatedAt, __v, ...rest }) => rest);
     const arrWithNewOrder = arrWithoutUnwantedFields.map(({ createdAt, callId, customerName, customerCode, userName, contactNumber, customerEmail, problemDescription, engineersAssigned, ...rest }) => ({
-      createdAt: convertDateFormat(createdAt.substring(0, 10)),
+      'Date': createdAt ? convertDateFormat(createdAt.substring(0, 10)) : '',
       'Call Id': callId,
       'Customer Name': customerName,
       'Customer Code': customerCode,
@@ -96,19 +96,27 @@ function CallRegister() {
       'Contact Number': contactNumber,
       'Customer Email': customerEmail,
       'Problem Description': problemDescription,
-      'Engineers Assigned': engineersAssigned[0]?.engineerName,
-      'Serial Number': rest.serialNumber,
-      'Customer Address': rest.customerAddress,
-      'Status': rest.status,
-      'Category': rest.category,
-      'Group': rest.itemName,
-      'Item Model Number': rest.itemModelNumber
+      'Call Log': problemDescription || rest.customerRemark || '',
+      'Call Log Date': createdAt ? convertDateFormat(createdAt.substring(0, 10)) : '',
+      'Engineers Assigned': engineersAssigned?.[0]?.engineerName || '',
+      'Serial Number': rest.serialNumber || '',
+      'Customer Address': rest.customerAddress || '',
+      'Status': rest.status || '',
+      'Category': rest.category || '',
+      'Group': rest.itemName || '',
+      'Item Model Number': rest.itemModelNumber || '',
+      'Action': formatAction(rest),
+      'Part Status': rest.itemStatus || '',
+      'Close Date': getCloseDate(rest),
+      'Closed Date': getCloseDate(rest)
     }));
+
+    if (!arrWithNewOrder || arrWithNewOrder.length === 0) return;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Calls');
 
-    const headers = Object.keys(arrWithNewOrder[0]).map(header => header === 'createdAt' ? 'Date' : header);
+    const headers = Object.keys(arrWithNewOrder[0]);
     worksheet.addRow(headers);
 
     arrWithNewOrder.forEach((row) => {
@@ -118,7 +126,6 @@ function CallRegister() {
     worksheet.getRow(1).eachCell((cell) => {
       cell.font = { bold: true };
     });
-
 
     headers.forEach((header, index) => {
       const column = worksheet.getColumn(index + 1);
@@ -136,11 +143,8 @@ function CallRegister() {
       column.width = Math.min(100, Math.max(10, header.length * 2.8));
     });
 
-
     const buffer = await workbook.xlsx.writeBuffer();
-
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -149,57 +153,52 @@ function CallRegister() {
     window.URL.revokeObjectURL(url);
   };
 
-
-
   return (
     <div>
       <SideBarMain />
       <SideBar />
-      <Stack direction={'row'} p={1} bgcolor={'white'} gap={2} >
+      <Stack direction={'row'} p={1} bgcolor={'white'} gap={2} alignItems="center">
         <Stack pl={'20%'}>
           {state.date.disabled ? (
-            <Button onClick={() => { setState({ ...state, date: { ...state.date, disabled: false } }) }}>Filter By Date</Button>
+            <Button onClick={() => { setState({ ...state, date: { ...state.date, disabled: false } }); }}>Filter By Date</Button>
           ) : (
-            <Button onClick={() => { setState({ ...state, date: { ...state.date, disabled: true, from: '', to: '' } }); getData() }}>Clear Filter</Button>
+            <Button onClick={() => { setState({ ...state, date: { ...state.date, disabled: true, from: '', to: '' } }); getData(); }}>Clear Filter</Button>
           )}
-
         </Stack>
         <Typography variant='body1'>| |</Typography>
-        <Stack direction={'row'} gap={7}>
-          <Stack direction={'row'} gap={1.7} height={'30px'}>
+        <Stack direction={'row'} gap={7} alignItems="center">
+          <Stack direction={'row'} gap={1.7} height={'30px'} alignItems="center">
             <label>From: </label>
             <input type='date'
               style={{ cursor: !state.date.disabled ? 'pointer' : '', backgroundColor: state.date.disabled ? '#e0e0e0' : '', padding: '0px' }}
               value={state.date.from}
               disabled={state.date.disabled}
-              onChange={(e) => { setState({ ...state, date: { ...state.date, from: e.target.value } }) }}
-
+              onChange={(e) => { setState({ ...state, date: { ...state.date, from: e.target.value } }); }}
             />
           </Stack>
-          <Stack direction={'row'} gap={1.7} height={'30px'}>
+          <Stack direction={'row'} gap={1.7} height={'30px'} alignItems="center">
             <label>To: </label>
             <input type='date'
               style={{ cursor: !state.date.disabled ? 'pointer' : '', backgroundColor: state.date.disabled ? '#e0e0e0' : '', padding: '0px' }}
               value={state.date.to}
               disabled={state.date.disabled}
-              onChange={(e) => { setState({ ...state, date: { ...state.date, to: e.target.value } }) }}
-
+              onChange={(e) => { setState({ ...state, date: { ...state.date, to: e.target.value } }); }}
             />
           </Stack>
         </Stack>
         <Typography variant='body1'>| |</Typography>
-        <Stack >
+        <Stack>
           <Button variant='contained'
             disabled={(!state.date.from) || (!state.date.to)}
-            onClick={() => { getFilteredData(state.date.from, state.date.to) }}
+            onClick={() => { getFilteredData(state.date.from, state.date.to); }}
           >
             Filter
           </Button>
         </Stack>
         <Typography variant='body1'>| |</Typography>
-        <Stack  >
+        <Stack>
           <IconButton title={'Download Report'} aria-label="download"
-            disabled={arr.length == 0}
+            disabled={arr.length === 0}
             onClick={downloadExcel}
           >
             <DownloadIcon sx={{ color: arr.length > 0 ? 'black' : 'grey' }} />
@@ -208,21 +207,16 @@ function CallRegister() {
       </Stack>
 
       {isLoading ? <Loader /> :
-
-
         arr.length > 0 ?
           <Stack alignItems={'center'}>
-            {
-              arr?.map((item) => {
-                return <CallCard callNumber={item.callId} customerName={item.customerName} date={item.createdAt} link={`/callmaster/call-details-specific/${item.callId}`} isPending={false} />
-              })
-            }
+            {arr?.map((item) => (
+              <CallCard key={item.callId} callNumber={item.callId} customerName={item.customerName} date={item.createdAt} link={`/callmaster/call-details-specific/${item.callId}`} isPending={false} />
+            ))}
           </Stack> :
           <Stack color={'var(--red)'}>No Results</Stack>
-
       }
-    </div >
-  )
+    </div>
+  );
 }
 
-export default CallRegister
+export default CallRegister;

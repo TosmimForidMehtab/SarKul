@@ -67,6 +67,7 @@ const CallUpdate = () => {
       const callNumber = selectedCall.callId || selectedCall.callNumber;
       await api.patch(`/call/${callNumber}`, { 
         partStatus: partStatus,
+        action: partStatus,
         engineerRemark: engineerRemark,
         customerRemark: customerRemark
       });

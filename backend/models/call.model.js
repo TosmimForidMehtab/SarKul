@@ -82,6 +82,9 @@ const callSchema = new Schema(
         closedAt: {
             type: Date,
         },
+        action: {
+            type: String,
+        },
         customerRemark: {
             type: String,
         },

@@ -16,6 +16,36 @@ import api from '../../services/api';
 import { exportToCSV } from '../../utils/exportToCSV';
 import { formatDate } from '../../utils/formatDate';
 
+const formatAction = (call) => {
+  if (call.action) {
+    const actionMap = {
+      'serviceAndClose': 'Service and Close',
+      'cancelAndClose': 'Cancel and Close',
+      'customerDependence': 'Customer Dependence',
+      'oemPending': 'OEM Pending',
+      'replace': 'Part Replace',
+      'required': 'Part Required',
+      'pending': 'Part Pending',
+      'chargeable': 'Chargeable'
+    };
+    return actionMap[call.action] || call.action;
+  }
+  if (call.itemStatus) {
+    const actionMap = {
+      'serviceAndClose': 'Service and Close',
+      'cancelAndClose': 'Cancel and Close',
+      'customerDependence': 'Customer Dependence',
+      'oemPending': 'OEM Pending',
+      'replace': 'Part Replace',
+      'required': 'Part Required',
+      'pending': 'Part Pending',
+      'chargeable': 'Chargeable'
+    };
+    return actionMap[call.itemStatus] || call.itemStatus;
+  }
+  return 'Pending Action';
+};
+
 const PendingCalls = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -44,6 +74,41 @@ const PendingCalls = () => {
     sortBy: 'createdAt',
     sortOrder: 'desc'
   });
+
+  const mapPendingCallToRow = (call) => {
+    const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
+      ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
+      : (call.engineerName || '');
+
+    const actionText = formatAction(call);
+    const callLogText = call.problemDescription || call.customerRemark || '';
+
+    return {
+      'Date': call.createdAt ? formatDate(call.createdAt) : '',
+      'Call Id': call.callId || call.callNumber || '',
+      'Customer Name': call.customerName || '',
+      'Customer Code': call.customerCode || '',
+      'User Name': call.userName || '',
+      'Contact Number': call.contactNumber || '',
+      'Customer Email': call.customerEmail || '',
+      'Customer Address': call.customerAddress || '',
+      'Problem Description': call.problemDescription || '',
+      'Call Log': callLogText,
+      'Call Log Date': call.createdAt ? formatDate(call.createdAt) : '',
+      'Engineers Assigned': engineer,
+      'Serial Number': call.serialNumber || '',
+      'Status': call.status || 'pending',
+      'Category': call.category || '',
+      'Group': call.itemName || call.group || call.groupName || '',
+      'Item Model Number': call.itemModelNumber || '',
+      'Action': actionText,
+      'Part Status': call.itemStatus || '',
+      'Customer Remark': call.customerRemark || '',
+      'Engineer Remark': call.engineerRemark || '',
+      'Close Date': 'Pending',
+      'Closed Date': 'Pending'
+    };
+  };
 
   const handleDownloadCSV = async () => {
     try {
@@ -74,63 +139,12 @@ const PendingCalls = () => {
         return;
       }
 
-      const csvData = rawData.map(call => {
-        const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
-          ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
-          : (call.engineerName || '');
-
-        return {
-          'Date': call.createdAt ? formatDate(call.createdAt) : '',
-          'Call Id': call.callId || call.callNumber || '',
-          'Customer Name': call.customerName || '',
-          'Customer Code': call.customerCode || '',
-          'User Name': call.userName || '',
-          'Contact Number': call.contactNumber || '',
-          'Customer Email': call.customerEmail || '',
-          'Customer Address': call.customerAddress || '',
-          'Problem Description': call.problemDescription || '',
-          'Engineers Assigned': engineer,
-          'Serial Number': call.serialNumber || '',
-          'Status': call.status || 'pending',
-          'Category': call.category || '',
-          'Group': call.itemName || call.group || call.groupName || '',
-          'Item Model Number': call.itemModelNumber || '',
-          'Customer Remark': call.customerRemark || '',
-          'Engineer Remark': call.engineerRemark || '',
-          'Part Status': call.itemStatus || ''
-        };
-      });
-
+      const csvData = rawData.map(mapPendingCallToRow);
       exportToCSV(csvData, 'Pending_Calls.csv');
       toast.success(`Downloaded ${csvData.length} pending calls!`);
     } catch (err) {
       if (data && data.length > 0) {
-        const csvData = data.map(call => {
-          const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
-            ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
-            : (call.engineerName || '');
-
-          return {
-            'Date': call.createdAt ? formatDate(call.createdAt) : '',
-            'Call Id': call.callId || call.callNumber || '',
-            'Customer Name': call.customerName || '',
-            'Customer Code': call.customerCode || '',
-            'User Name': call.userName || '',
-            'Contact Number': call.contactNumber || '',
-            'Customer Email': call.customerEmail || '',
-            'Customer Address': call.customerAddress || '',
-            'Problem Description': call.problemDescription || '',
-            'Engineers Assigned': engineer,
-            'Serial Number': call.serialNumber || '',
-            'Status': call.status || 'pending',
-            'Category': call.category || '',
-            'Group': call.itemName || call.group || call.groupName || '',
-            'Item Model Number': call.itemModelNumber || '',
-            'Customer Remark': call.customerRemark || '',
-            'Engineer Remark': call.engineerRemark || '',
-            'Part Status': call.itemStatus || ''
-          };
-        });
+        const csvData = data.map(mapPendingCallToRow);
         exportToCSV(csvData, 'Pending_Calls.csv');
         toast.success(`Downloaded ${csvData.length} loaded records!`);
       } else {
@@ -165,7 +179,7 @@ const PendingCalls = () => {
 
   const openUpdateModal = (call) => {
     setSelectedCall(call);
-    setPartStatus('');
+    setPartStatus(call.itemStatus || '');
     setEngineerRemark(call.engineerRemark || '');
     setCustomerRemark(call.problemDescription || '');
     setUpdateModalOpen(true);
@@ -199,15 +213,17 @@ const PendingCalls = () => {
     }
     setSubmitting(true);
     try {
-      await api.post('/call/update', {
-        callId: selectedCall.callId || selectedCall.callNumber,
+      await api.patch(`/call/${selectedCall.callId || selectedCall.callNumber}`, {
         itemStatus: partStatus,
+        partStatus: partStatus,
+        action: partStatus,
         engineerRemark,
         customerRemark: selectedCall.customerRemark || selectedCall.problemDescription || '',
         status: isClosing ? 'completed' : 'pending'
       });
       toast.success(isClosing ? 'Call completed and closed successfully' : 'Call updated successfully');
       setUpdateModalOpen(false);
+      window.location.reload();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to update call');
     } finally {
@@ -328,14 +344,22 @@ const PendingCalls = () => {
                       Group: {groupName}
                     </Typography>
                   )}
+                  <Typography variant="body2" color="secondary.main" fontWeight="medium" gutterBottom>
+                    Action: {formatAction(call)}
+                  </Typography>
                   {call.createdAt && (
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Date: {formatDate(call.createdAt)}
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Call Log Date: {formatDate(call.createdAt)}
                     </Typography>
                   )}
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, p: 1, bgcolor: 'rgba(0,0,0,0.03)', borderRadius: 1 }}>
-                    {call.problemDescription?.substring(0, 50)}...
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Close Date: Pending
                   </Typography>
+                  {call.problemDescription && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, p: 1, bgcolor: 'rgba(0,0,0,0.03)', borderRadius: 1 }}>
+                      Log: {call.problemDescription}
+                    </Typography>
+                  )}
                 </CardContent>
                 <Box sx={{ p: 2, pt: 0, mt: 'auto' }}>
                   <Stack direction="row" spacing={1}>
@@ -393,7 +417,7 @@ const PendingCalls = () => {
               value={customerRemark} 
               disabled
             />
-            <TextField select label="Part Status" value={partStatus} onChange={(e) => setPartStatus(e.target.value)} required>
+            <TextField select label="Part Status / Action" value={partStatus} onChange={(e) => setPartStatus(e.target.value)} required>
               <MenuItem value="required">Part Required</MenuItem>
               <MenuItem value="pending">Part Pending</MenuItem>
               <MenuItem value="replace">Part Replace</MenuItem>

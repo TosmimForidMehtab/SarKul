@@ -10,6 +10,21 @@ import StatusBadge from '../shared/StatusBadge';
 import api from '../../services/api';
 import { formatDateTime } from '../../utils/formatDate';
 
+const formatActionText = (val) => {
+  if (!val) return 'N/A';
+  const mapping = {
+    serviceAndClose: 'Service and Close',
+    cancelAndClose: 'Cancel and Close',
+    customerDependence: 'Customer Dependence',
+    oemPending: 'OEM Pending',
+    replace: 'Part Replace',
+    required: 'Part Required',
+    pending: 'Part Pending',
+    chargeable: 'Chargeable'
+  };
+  return mapping[val] || val;
+};
+
 const CallDetails = () => {
   const [callOptions, setCallOptions] = useState([]);
   const [selectedCall, setSelectedCall] = useState(null);
@@ -173,11 +188,17 @@ const CallDetails = () => {
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
+                    <Typography variant="subtitle2" color="text.secondary">Action</Typography>
+                    <Typography variant="body1" fontWeight="bold" color="primary">
+                      {formatActionText(callDetails.action || callDetails.itemStatus)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
                     <Typography variant="subtitle2" color="text.secondary">Priority</Typography>
                     <Chip label={callDetails.priority || 'Medium'} size="small" color={callDetails.priority === 'high' ? 'error' : 'default'} />
                   </Grid>
                   <Grid item xs={12}>
-                    <Typography variant="subtitle2" color="text.secondary">Problem Description</Typography>
+                    <Typography variant="subtitle2" color="text.secondary">Problem Description (Call Log)</Typography>
                     <Typography variant="body2">{callDetails.problemDescription || 'N/A'}</Typography>
                   </Grid>
                   <Grid item xs={12}>
@@ -220,8 +241,16 @@ const CallDetails = () => {
                   <Divider sx={{ mb: 2 }} />
                   <Stack spacing={2}>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Created On</Typography>
+                      <Typography variant="caption" color="text.secondary">Call Log Date</Typography>
                       <Typography variant="body2">{formatDateTime(callDetails.createdAt)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Close Date</Typography>
+                      <Typography variant="body2">
+                        {callDetails.closedAt 
+                          ? formatDateTime(callDetails.closedAt) 
+                          : (callDetails.status === 'completed' ? formatDateTime(callDetails.updatedAt) : 'Pending')}
+                      </Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary">Last Updated</Typography>
