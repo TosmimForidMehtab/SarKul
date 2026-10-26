@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, Card, CardContent, Typography, TextField, MenuItem, 
-  Grid, InputAdornment, Stack
+  Grid, InputAdornment, Stack, Button
 } from '@mui/material';
-import { Search as SearchIcon, FilterList as FilterIcon, ArrowForward, ArrowBack } from '@mui/icons-material';
+import { Search as SearchIcon, FilterList as FilterIcon, ArrowForward, Download as DownloadIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
 import StatusBadge from '../shared/StatusBadge';
@@ -11,6 +11,8 @@ import EmptyState from '../shared/EmptyState';
 import { CardSkeleton } from '../shared/LoadingSkeleton';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
+import { exportToCSV } from '../../utils/exportToCSV';
+import { formatDate } from '../../utils/formatDate';
 
 const PartTransactionDetail = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,6 +30,28 @@ const PartTransactionDetail = () => {
   });
 
   useEffect(() => { if (error) toast.error(error); }, [error]);
+
+  const handleDownloadCSV = () => {
+    if (!data || data.length === 0) {
+      toast.error('No data to download');
+      return;
+    }
+    const csvData = data.map(tx => ({
+      'Date': tx.createdAt ? formatDate(tx.createdAt) : '',
+      'Transaction Type': tx.category === 'b2e' ? 'Branch to Engineer (B2E)' : 'Engineer to Branch (E2B)',
+      'Call ID': tx.callId || '',
+      'Group': tx.partName || tx.itemName || '',
+      'Item Name': tx.itemName || '',
+      'Part Name': tx.partName || '',
+      'Stock ID': tx.stockId || '',
+      'Engineer Name': tx.engineerName || '',
+      'Model Number': tx.modelNumber || '',
+      'Serial Number': tx.serialNumber || '',
+      'Dispatch Mode': tx.dispatchMode || '',
+      'Part Status': tx.partStatus || ''
+    }));
+    exportToCSV(csvData, 'Part_Transaction_Report.csv');
+  };
 
   return (
     <Box>
@@ -54,7 +78,7 @@ const PartTransactionDetail = () => {
             </Grid>
             
             <Grid item xs={12} md={8}>
-              <Stack direction="row" spacing={2} justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <FilterIcon color="action" fontSize="small" />
                   <Typography variant="body2" color="text.secondary">Filters:</Typography>
@@ -86,6 +110,10 @@ const PartTransactionDetail = () => {
                   <MenuItem value="NRGP">NRGP</MenuItem>
                   <MenuItem value="consumable">Consumable</MenuItem>
                 </TextField>
+
+                <Button variant="outlined" startIcon={<DownloadIcon />} size="small" onClick={handleDownloadCSV}>
+                  CSV
+                </Button>
               </Stack>
             </Grid>
           </Grid>
@@ -106,7 +134,6 @@ const PartTransactionDetail = () => {
                       status={isB2E ? 'B2E' : 'E2B'} 
                       color={isB2E ? 'primary' : 'secondary'} 
                     />
-                    
                   </Box>
 
                   <Box display="flex" alignItems="center" justifyContent="center" mb={2} p={1} bgcolor="action.hover" borderRadius={1}>
@@ -127,17 +154,17 @@ const PartTransactionDetail = () => {
                   <Typography variant="body2" gutterBottom>
                     <strong>Stock ID:</strong> {transaction.stockId}
                   </Typography>
-                  <Typography variant="body2" gutterBottom>
-                    <strong>Model Number:</strong> {transaction.modelNumber || 'N/A'}
-                  </Typography>
-                  <Typography variant="body2" gutterBottom>
-                    <strong>Serial Number:</strong> {transaction.serialNumber || 'N/A'}
+                  <Typography variant="body2" color="primary" fontWeight="bold" gutterBottom>
+                    <strong>Group / Part:</strong> {transaction.partName || transaction.itemName || 'N/A'}
                   </Typography>
                   <Typography variant="body2" gutterBottom>
                     <strong>Item Name:</strong> {transaction.itemName || 'N/A'}
                   </Typography>
                   <Typography variant="body2" gutterBottom>
-                    <strong>Part Name:</strong> {transaction.partName || transaction.itemPart || 'N/A'}
+                    <strong>Model Number:</strong> {transaction.modelNumber || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2" gutterBottom>
+                    <strong>Serial Number:</strong> {transaction.serialNumber || 'N/A'}
                   </Typography>
                   {transaction.dispatchMode && (
                     <Typography variant="body2" gutterBottom>
@@ -175,6 +202,3 @@ const PartTransactionDetail = () => {
 };
 
 export default PartTransactionDetail;
-
-
-

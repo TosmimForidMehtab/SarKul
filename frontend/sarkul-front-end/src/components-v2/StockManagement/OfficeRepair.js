@@ -4,7 +4,7 @@ import {
   Grid, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions,
   InputAdornment
 } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
 import StatusBadge from '../shared/StatusBadge';
@@ -12,6 +12,8 @@ import EmptyState from '../shared/EmptyState';
 import { CardSkeleton } from '../shared/LoadingSkeleton';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
+import { exportToCSV } from '../../utils/exportToCSV';
+import { formatDate } from '../../utils/formatDate';
 import api from '../../services/api';
 
 const OfficeRepair = () => {
@@ -36,6 +38,26 @@ const OfficeRepair = () => {
 
   useEffect(() => { if (error) toast.error(error); }, [error]);
 
+  const handleDownloadCSV = () => {
+    if (!data || data.length === 0) {
+      toast.error('No data to download');
+      return;
+    }
+    const csvData = data.map(stock => ({
+      'Date': stock.createdAt ? formatDate(stock.createdAt) : '',
+      'Stock Id': stock.stockId || '',
+      'Item Name': stock.itemName || '',
+      'Group': stock.itemPart || stock.group || stock.groupName || '',
+      'Part': stock.itemPart || '',
+      'Serial Number': stock.serialNumber || '',
+      'Model Number': stock.modelNumber || '',
+      'Status': stock.status || '',
+      'Office Repair': stock.officeRepair || 'yes',
+      'Scrap': stock.scrap || 'no'
+    }));
+    exportToCSV(csvData, 'Office_Repair_Report.csv');
+  };
+
   const handleCloseDialog = () => {
     setDialogState({ open: false, scrap: false, stockId: '', repairAmount: '' });
   };
@@ -57,7 +79,6 @@ const OfficeRepair = () => {
     try {
       const response = await api.patch(`/stock/${dialogState.stockId}`, payload);
       toast.success(response.data.message || 'Action completed successfully');
-      // In a real app we'd mutate SWR or useInfiniteScroll cache, but here we just reload the page or filter the array
       window.location.reload(); 
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to update stock');
@@ -73,17 +94,27 @@ const OfficeRepair = () => {
       
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <TextField
-            fullWidth
-            placeholder="Search office repair stocks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
-            }}
-            size="small"
-            sx={{ maxWidth: 400 }}
-          />
+          <Stack direction="row" spacing={2} justifyContent="space-between" alignItems="center" flexWrap="wrap" useFlexGap>
+            <TextField
+              fullWidth
+              placeholder="Search office repair stocks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
+              }}
+              size="small"
+              sx={{ maxWidth: 400 }}
+            />
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              size="small"
+              onClick={handleDownloadCSV}
+            >
+              CSV
+            </Button>
+          </Stack>
         </CardContent>
       </Card>
 
@@ -104,6 +135,9 @@ const OfficeRepair = () => {
                     </Typography>
                     <StatusBadge status="maintenance" />
                   </Stack>
+                  <Typography variant="body2" color="primary" fontWeight="medium" gutterBottom>
+                    Group: {stock.itemPart || stock.group || stock.groupName || 'N/A'}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Stock ID: {stock.stockId}
                   </Typography>
@@ -183,5 +217,3 @@ const OfficeRepair = () => {
 };
 
 export default OfficeRepair;
-
-

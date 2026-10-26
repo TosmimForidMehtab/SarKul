@@ -36,7 +36,7 @@ const ExpenseList = () => {
     sortOrder: 'desc'
   });
 
-    useEffect(() => { if (error) toast.error(error); }, [error]);
+  useEffect(() => { if (error) toast.error(error); }, [error]);
 
   const handleDownloadCSV = () => {
     if (!data || data.length === 0) {
@@ -44,13 +44,14 @@ const ExpenseList = () => {
       return;
     }
     const csvData = data.map(expense => ({
-      EngineerName: expense.engineerName,
-      Category: expense.category,
-      Amount: "Rs " + expense.amount,
-      Month: expense.month,
-      Period: expense.period,
-      Remarks: expense.remarks || '',
-      Date: expense.createdAt ? formatDate(expense.createdAt) : ''
+      'Date': expense.createdAt ? formatDate(expense.createdAt) : '',
+      'Engineer Name': expense.engineerName || '',
+      'Group': expense.category || expense.group || '',
+      'Category': expense.category || '',
+      'Amount': "Rs " + (expense.amount ?? ''),
+      'Month': expense.month || '',
+      'Period': expense.period || '',
+      'Remarks': expense.remarks || ''
     }));
     exportToCSV(csvData, 'Expense_Report.csv');
   };
@@ -108,7 +109,7 @@ const ExpenseList = () => {
                   ))}
                 </TextField>
 
-                                <TextField
+                <TextField
                   select
                   size="small"
                   value={month}
@@ -139,7 +140,7 @@ const ExpenseList = () => {
               <Card sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 4 }, display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                    <Chip label={expense.category} color="primary" size="small" />
+                    <Chip label={`Group: ${expense.category}`} color="primary" size="small" />
                     <Typography variant="h6" color="success.main">
                       ₹{expense.amount}
                     </Typography>
@@ -194,7 +195,3 @@ const ExpenseList = () => {
 };
 
 export default ExpenseList;
-
-
-
-

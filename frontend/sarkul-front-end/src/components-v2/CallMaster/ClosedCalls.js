@@ -31,14 +31,33 @@ const ClosedCalls = () => {
       toast.error('No data to download');
       return;
     }
-    const csvData = data.map(call => ({
-      CallNumber: call.callId || call.callNumber,
-      Status: call.status || 'closed',
-      Customer: call.customerName,
-      Category: call.category,
-      ClosedOn: call.updatedAt ? formatDate(call.updatedAt) : '',
-      Remarks: call.remarks || ''
-    }));
+    const csvData = data.map(call => {
+      const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
+        ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
+        : (call.engineerName || '');
+
+      return {
+        'Date': call.createdAt ? formatDate(call.createdAt) : '',
+        'Call Id': call.callId || call.callNumber || '',
+        'Customer Name': call.customerName || '',
+        'Customer Code': call.customerCode || '',
+        'User Name': call.userName || '',
+        'Contact Number': call.contactNumber || '',
+        'Customer Email': call.customerEmail || '',
+        'Customer Address': call.customerAddress || '',
+        'Problem Description': call.problemDescription || '',
+        'Engineers Assigned': engineer,
+        'Serial Number': call.serialNumber || '',
+        'Status': call.status || 'completed',
+        'Category': call.category || '',
+        'Group': call.itemName || call.group || call.groupName || '',
+        'Item Model Number': call.itemModelNumber || '',
+        'Closed Date': call.closedAt ? formatDate(call.closedAt) : (call.updatedAt ? formatDate(call.updatedAt) : ''),
+        'Customer Remark': call.customerRemark || '',
+        'Engineer Remark': call.engineerRemark || '',
+        'Part Status': call.itemStatus || ''
+      };
+    });
     exportToCSV(csvData, 'Closed_Calls.csv');
   };
 
@@ -80,7 +99,7 @@ const ClosedCalls = () => {
             <Grid item xs={12} md={3}>
               <Stack direction="row" justifyContent="flex-end">
                 <Button variant="outlined" startIcon={<DownloadIcon />} size="small" onClick={handleDownloadCSV}>
-                  CSV
+                  Download CSV
                 </Button>
               </Stack>
             </Grid>
@@ -91,6 +110,7 @@ const ClosedCalls = () => {
       <Grid container spacing={2}>
         {data.map((call, index) => {
           const isLast = data.length === index + 1;
+          const groupName = call.itemName || call.group || call.groupName || '';
           return (
             <Grid item xs={12} sm={6} md={4} key={call.callId || call._id} ref={isLast ? lastElementRef : null}>
               <Card sx={{ 
@@ -109,10 +129,18 @@ const ClosedCalls = () => {
                     Customer: {call.customerName}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Closed On: {call.updatedAt ? formatDate(call.updatedAt) : 'N/A'}
+                    Category: {call.category}
+                  </Typography>
+                  {groupName && (
+                    <Typography variant="body2" color="primary" gutterBottom>
+                      Group: {groupName}
+                    </Typography>
+                  )}
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Closed On: {call.closedAt ? formatDate(call.closedAt) : (call.updatedAt ? formatDate(call.updatedAt) : 'N/A')}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" noWrap>
-                    Remarks: {call.remarks || 'No remarks'}
+                    Remarks: {call.engineerRemark || call.customerRemark || call.remarks || 'No remarks'}
                   </Typography>
                 </CardContent>
               </Card>
@@ -131,5 +159,3 @@ const ClosedCalls = () => {
 };
 
 export default ClosedCalls;
-
-

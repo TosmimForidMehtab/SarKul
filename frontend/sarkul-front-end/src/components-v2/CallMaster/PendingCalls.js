@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Card, CardContent, Typography, TextField, 
   Grid, InputAdornment, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-  Autocomplete, MenuItem, IconButton
+  Autocomplete, MenuItem
 } from '@mui/material';
-import { Search as SearchIcon, Download as DownloadIcon, FilterList as FilterIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
 import StatusBadge from '../shared/StatusBadge';
@@ -45,13 +45,32 @@ const PendingCalls = () => {
       toast.error('No data to download');
       return;
     }
-    const csvData = data.map(call => ({
-      CallNumber: call.callId || call.callNumber,
-      Customer: call.customerName,
-      Category: call.category,
-      Problem: call.problemDescription,
-      CreatedOn: call.createdAt ? formatDate(call.createdAt) : ''
-    }));
+    const csvData = data.map(call => {
+      const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
+        ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
+        : (call.engineerName || '');
+
+      return {
+        'Date': call.createdAt ? formatDate(call.createdAt) : '',
+        'Call Id': call.callId || call.callNumber || '',
+        'Customer Name': call.customerName || '',
+        'Customer Code': call.customerCode || '',
+        'User Name': call.userName || '',
+        'Contact Number': call.contactNumber || '',
+        'Customer Email': call.customerEmail || '',
+        'Customer Address': call.customerAddress || '',
+        'Problem Description': call.problemDescription || '',
+        'Engineers Assigned': engineer,
+        'Serial Number': call.serialNumber || '',
+        'Status': call.status || 'pending',
+        'Category': call.category || '',
+        'Group': call.itemName || call.group || call.groupName || '',
+        'Item Model Number': call.itemModelNumber || '',
+        'Customer Remark': call.customerRemark || '',
+        'Engineer Remark': call.engineerRemark || '',
+        'Part Status': call.itemStatus || ''
+      };
+    });
     exportToCSV(csvData, 'Pending_Calls.csv');
   };
 
@@ -94,11 +113,11 @@ const PendingCalls = () => {
     try {
       await api.post('/call/assign', {
         callId: selectedCall.callId || selectedCall.callNumber,
-        engineerName: selectedEngineer.employeeName
+        engineerName: selectedEngineer.employeeName,
+        engineerCode: selectedEngineer.employeeCode
       });
       toast.success('Call assigned successfully');
       setAssignModalOpen(false);
-      // Reload logic could be added here, currently relies on navigation or state
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to assign call');
     } finally {
@@ -160,6 +179,12 @@ const PendingCalls = () => {
                 <MenuItem value="desktop">Desktop</MenuItem>
                 <MenuItem value="laptop">Laptop</MenuItem>
                 <MenuItem value="printer">Printer</MenuItem>
+                <MenuItem value="plotter">Plotter</MenuItem>
+                <MenuItem value="scanner">Scanner</MenuItem>
+                <MenuItem value="server">Server</MenuItem>
+                <MenuItem value="UPS">UPS</MenuItem>
+                <MenuItem value="cctv">CCTV</MenuItem>
+                <MenuItem value="activity">Activity</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} md={4}>
@@ -176,6 +201,7 @@ const PendingCalls = () => {
       <Grid container spacing={2}>
         {data.map((call, index) => {
           const isLast = data.length === index + 1;
+          const groupName = call.itemName || call.group || call.groupName || '';
           return (
             <Grid item xs={12} sm={6} md={4} key={call.callId || call._id} ref={isLast ? lastElementRef : null}>
               <Card sx={{ 
@@ -197,6 +223,11 @@ const PendingCalls = () => {
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Category: {call.category}
                   </Typography>
+                  {groupName && (
+                    <Typography variant="body2" color="primary" gutterBottom>
+                      Group: {groupName}
+                    </Typography>
+                  )}
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Date: {formatDate(call.createdAt)}
                   </Typography>
@@ -295,4 +326,3 @@ const PendingCalls = () => {
 };
 
 export default PendingCalls;
-

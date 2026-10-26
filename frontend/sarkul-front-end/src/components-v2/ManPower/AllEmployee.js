@@ -17,6 +17,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import DownloadIcon from '@mui/icons-material/Download';
 
 import PageHeader from '../shared/PageHeader';
 import { CardSkeleton } from '../shared/LoadingSkeleton';
@@ -24,6 +25,8 @@ import EmptyState from '../shared/EmptyState';
 import StatusBadge from '../shared/StatusBadge';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
+import { exportToCSV } from '../../utils/exportToCSV';
+import { formatDate } from '../../utils/formatDate';
 import { toast } from 'react-toastify';
 
 const AllEmployee = () => {
@@ -68,6 +71,26 @@ const AllEmployee = () => {
 
   useEffect(() => { if (error) toast.error(error); }, [error]);
 
+  const handleDownloadCSV = () => {
+    if (!employees || employees.length === 0) {
+      toast.error('No employee data to download');
+      return;
+    }
+    const csvData = employees.map(emp => ({
+      'Date': emp.createdAt ? formatDate(emp.createdAt) : '',
+      'Employee Code': emp.employeeCode || '',
+      'Employee Name': emp.employeeName || '',
+      'Group / Designation': emp.employeeDesignation || '',
+      'Designation': emp.employeeDesignation || '',
+      'Contact': emp.employeeContact || '',
+      'Email': emp.employeeEmail || '',
+      'Status': emp.status || 'active',
+      'Join Date': emp.joinDate ? formatDate(emp.joinDate) : '',
+      'Salary': emp.salary != null ? 'Rs ' + emp.salary : ''
+    }));
+    exportToCSV(csvData, 'Employee_Report.csv');
+  };
+
   return (
     <Box>
       <PageHeader
@@ -88,7 +111,7 @@ const AllEmployee = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
                 label="Search Employees"
@@ -99,7 +122,7 @@ const AllEmployee = () => {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={2}>
               <TextField
                 select
                 fullWidth
@@ -140,6 +163,18 @@ const AllEmployee = () => {
                 <MenuItem value="-joinDate">Join Date</MenuItem>
                 <MenuItem value="-salary">Salary (High to Low)</MenuItem>
               </TextField>
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <Button
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                size="small"
+                fullWidth
+                onClick={handleDownloadCSV}
+                sx={{ height: 40 }}
+              >
+                CSV
+              </Button>
             </Grid>
           </Grid>
         </CardContent>

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, Card, CardContent, Typography, TextField, MenuItem, 
-  Grid, InputAdornment, IconButton, Stack, CircularProgress, Button
+  Grid, InputAdornment, Stack, Button
 } from '@mui/material';
-import { Search as SearchIcon, FilterList as FilterIcon, Download as DownloadIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
 import StatusBadge from '../shared/StatusBadge';
 import EmptyState from '../shared/EmptyState';
-import { TableSkeleton, CardSkeleton } from '../shared/LoadingSkeleton';
+import { CardSkeleton } from '../shared/LoadingSkeleton';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
 import { exportToCSV } from '../../utils/exportToCSV';
@@ -34,14 +34,33 @@ const CallRegister = () => {
       toast.error('No data to download');
       return;
     }
-    const csvData = data.map(call => ({
-      CallNumber: call.callId || call.callNumber,
-      Status: call.status,
-      Customer: call.customerName,
-      Category: call.category,
-      Problem: call.problemDescription,
-      CreatedOn: call.createdAt ? formatDate(call.createdAt) : ''
-    }));
+    const csvData = data.map(call => {
+      const engineer = (Array.isArray(call.engineersAssigned) && call.engineersAssigned.length > 0)
+        ? call.engineersAssigned.map(e => typeof e === 'object' ? (e.engineerName || e.employeeName || '') : e).filter(Boolean).join(', ')
+        : (call.engineerName || '');
+
+      return {
+        'Date': call.createdAt ? formatDate(call.createdAt) : '',
+        'Call Id': call.callId || call.callNumber || '',
+        'Customer Name': call.customerName || '',
+        'Customer Code': call.customerCode || '',
+        'User Name': call.userName || '',
+        'Contact Number': call.contactNumber || '',
+        'Customer Email': call.customerEmail || '',
+        'Customer Address': call.customerAddress || '',
+        'Problem Description': call.problemDescription || '',
+        'Engineers Assigned': engineer,
+        'Serial Number': call.serialNumber || '',
+        'Status': call.status || '',
+        'Category': call.category || '',
+        'Group': call.itemName || call.group || call.groupName || '',
+        'Item Model Number': call.itemModelNumber || '',
+        'Customer Remark': call.customerRemark || '',
+        'Engineer Remark': call.engineerRemark || '',
+        'Part Status': call.itemStatus || '',
+        'Closed Date': call.closedAt ? formatDate(call.closedAt) : (call.status === 'completed' && call.updatedAt ? formatDate(call.updatedAt) : '')
+      };
+    });
     exportToCSV(csvData, 'Call_Register.csv');
   };
 
@@ -93,7 +112,7 @@ const CallRegister = () => {
             <Grid item xs={12} md={2}>
               <Stack direction="row" justifyContent="flex-end">
                 <Button variant="outlined" startIcon={<DownloadIcon />} size="small" onClick={handleDownloadCSV}>
-                  CSV
+                  Download CSV
                 </Button>
               </Stack>
             </Grid>
@@ -104,6 +123,7 @@ const CallRegister = () => {
       <Grid container spacing={2}>
         {data.map((call, index) => {
           const isLast = data.length === index + 1;
+          const groupName = call.itemName || call.group || call.groupName || '';
           return (
             <Grid item xs={12} sm={6} md={4} key={call.callId || call._id} ref={isLast ? lastElementRef : null}>
               <Card sx={{ 
@@ -124,7 +144,11 @@ const CallRegister = () => {
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Category: {call.category}
                   </Typography>
-                  
+                  {groupName && (
+                    <Typography variant="body2" color="primary" gutterBottom>
+                      Group: {groupName}
+                    </Typography>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
@@ -148,6 +172,3 @@ const CallRegister = () => {
 };
 
 export default CallRegister;
-
-
-

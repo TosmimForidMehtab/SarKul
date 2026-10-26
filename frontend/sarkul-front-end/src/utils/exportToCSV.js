@@ -6,23 +6,24 @@ export const exportToCSV = (data, filename) => {
   // Get headers
   const headers = Object.keys(data[0]);
   
-  // Format CSV
+  // Format CSV helper
+  const formatCell = (val) => {
+    let cell = val === null || val === undefined ? '' : String(val);
+    if (cell.includes(',') || cell.includes('\n') || cell.includes('"') || cell.includes('\r')) {
+      cell = `"${cell.replace(/"/g, '""')}"`;
+    }
+    return cell;
+  };
+
   const csvContent = [
-    headers.join(','), // Header row
+    headers.map(formatCell).join(','), // Header row
     ...data.map(row => 
-      headers.map(header => {
-        let cell = row[header] === null || row[header] === undefined ? '' : String(row[header]);
-        // Escape quotes and wrap in quotes if there's a comma, newline, or quote
-        if (cell.includes(',') || cell.includes('\n') || cell.includes('"')) {
-          cell = `"${cell.replace(/"/g, '""')}"`;
-        }
-        return cell;
-      }).join(',')
+      headers.map(header => formatCell(row[header])).join(',')
     )
-  ].join('\n');
+  ].join('\r\n');
   
-  // Create download link
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  // Create download link with UTF-8 BOM for Excel support
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
@@ -32,5 +33,6 @@ export const exportToCSV = (data, filename) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 };

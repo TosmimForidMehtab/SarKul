@@ -36,8 +36,9 @@ function ExpenseList() {
     }
   }
   function convertDateFormat(inputDate) {
-
+    if (!inputDate) return '';
     var parts = inputDate.split("-");
+    if (parts.length < 3) return inputDate;
     var outputDate = parts[2] + "-" + parts[1] + "-" + parts[0];
 
     return outputDate;
@@ -50,13 +51,25 @@ function ExpenseList() {
     var day = currentDate.getDate();
 
     var formattedDate = day + "/" + month + "/" + year;
-    const arrWithoutUnwantedFields = expense.map(({ _id, updatedAt, __v, ...rest }) => rest);
-    const finalArr = arrWithoutUnwantedFields?.filter((item) => !item?.remarks.includes('test') && !item?.remarks.includes('check')); // filter out unwanted fields 
-    
+    const finalArr = expense
+      ?.filter((item) => !item?.remarks?.includes('test') && !item?.remarks?.includes('check'))
+      ?.map((item) => ({
+        Date: item.createdAt ? convertDateFormat(item.createdAt.substring(0, 10)) : '',
+        'Engineer Name': item.engineerName || '',
+        'Group': item.category || '',
+        'Category': item.category || '',
+        'Amount': 'Rs ' + (item.amount ?? ''),
+        'Month': item.month || '',
+        'Period': item.period || '',
+        'Remarks': item.remarks || ''
+      }));
+
+    if (!finalArr || finalArr.length === 0) return;
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Expense Report');
 
-    const headers = Object.keys(finalArr[0]).map(header => header === 'createdAt' ? 'Date' : header);
+    const headers = Object.keys(finalArr[0]);
     worksheet.addRow(headers);
 
     finalArr.forEach((row) => {

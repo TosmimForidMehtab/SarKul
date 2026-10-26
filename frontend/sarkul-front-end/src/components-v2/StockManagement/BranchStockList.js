@@ -3,7 +3,7 @@ import {
   Box, Card, CardContent, Typography, TextField, 
   Grid, InputAdornment, Stack, Drawer, Button, Chip
 } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageHeader from '../shared/PageHeader';
 import StatusBadge from '../shared/StatusBadge';
@@ -11,6 +11,7 @@ import EmptyState from '../shared/EmptyState';
 import { CardSkeleton } from '../shared/LoadingSkeleton';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useDebounce } from '../../hooks/useDebounce';
+import { exportToCSV } from '../../utils/exportToCSV';
 import { formatDate } from '../../utils/formatDate';
 
 const BranchStockList = () => {
@@ -27,23 +28,51 @@ const BranchStockList = () => {
 
   useEffect(() => { if (error) toast.error(error); }, [error]);
 
+  const handleDownloadCSV = () => {
+    if (!data || data.length === 0) {
+      toast.error('No data to download');
+      return;
+    }
+    const csvData = data.map(stock => ({
+      'Date': stock.createdAt ? formatDate(stock.createdAt) : '',
+      'Item Name': stock.itemName || '',
+      'Group': stock.brand || stock.itemName || '',
+      'Brand': stock.brand || '',
+      'Serial Number': stock.serialNumber || '',
+      'Price': stock.price != null ? 'Rs ' + stock.price : '',
+      'Warranty Start': stock.warrantyStart ? formatDate(stock.warrantyStart) : '',
+      'Warranty End': stock.warrantyEnd ? formatDate(stock.warrantyEnd) : ''
+    }));
+    exportToCSV(csvData, 'Branch_Stock_Report.csv');
+  };
+
   return (
     <Box>
       <PageHeader title="Branch Stock" />
       
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <TextField
-            fullWidth
-            placeholder="Search branch stocks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
-            }}
-            size="small"
-            sx={{ maxWidth: 400 }}
-          />
+          <Stack direction="row" spacing={2} justifyContent="space-between" alignItems="center" flexWrap="wrap" useFlexGap>
+            <TextField
+              fullWidth
+              placeholder="Search branch stocks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
+              }}
+              size="small"
+              sx={{ maxWidth: 400 }}
+            />
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              size="small"
+              onClick={handleDownloadCSV}
+            >
+              CSV
+            </Button>
+          </Stack>
         </CardContent>
       </Card>
 
@@ -68,6 +97,9 @@ const BranchStockList = () => {
                     </Typography>
                     <StatusBadge status="available" />
                   </Stack>
+                  <Typography variant="body2" color="primary" fontWeight="medium" gutterBottom>
+                    Group: {stock.brand || stock.itemName || 'N/A'}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Brand: {stock.brand}
                   </Typography>
@@ -120,6 +152,10 @@ const BranchStockList = () => {
                   <Typography variant="body1" fontWeight="medium">{selectedStock.itemName}</Typography>
                 </Box>
                 <Box>
+                  <Typography variant="caption" color="text.secondary">Group</Typography>
+                  <Typography variant="body1">{selectedStock.brand || selectedStock.itemName || 'N/A'}</Typography>
+                </Box>
+                <Box>
                   <Typography variant="caption" color="text.secondary">Brand</Typography>
                   <Typography variant="body1">{selectedStock.brand}</Typography>
                 </Box>
@@ -158,5 +194,3 @@ const BranchStockList = () => {
 };
 
 export default BranchStockList;
-
-

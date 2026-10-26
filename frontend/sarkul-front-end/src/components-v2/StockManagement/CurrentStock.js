@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Box, Card, CardContent, Typography, TextField, 
-  Grid, InputAdornment, Stack, MenuItem, Chip, Button, Drawer
+  Box, Card, CardContent, Typography, TextField, MenuItem, 
+  Grid, InputAdornment, Stack, Drawer, Button, Chip
 } from '@mui/material';
 import { Search as SearchIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
@@ -22,11 +22,13 @@ const CurrentStock = () => {
   
   const debouncedSearch = useDebounce(searchTerm, 500);
 
-  const { data, loading, error, hasMore, lastElementRef } = useInfiniteScroll('/stock', { status: 'available', officeRepair: 'no', scrap: 'no',
+  const { data, loading, error, hasMore, lastElementRef } = useInfiniteScroll('/stock', { 
+    officeRepair: 'no', 
+    scrap: 'no',
+    status: 'available',
     search: debouncedSearch,
     condition: conditionFilter || undefined,
     itemName: itemCategory || undefined,
-    status: 'available', // Enforce available status for Current Stock
     sortBy: 'createdAt',
     sortOrder: 'desc'
   });
@@ -38,23 +40,24 @@ const CurrentStock = () => {
     }
     const filteredData = data.filter(item => item.officeRepair !== 'yes' && item.scrap !== 'yes');
     const csvData = filteredData.map(item => ({
-      StockId: item.stockId,
-      ItemName: item.itemName,
-      Group: item.itemPart,
-      Configuration: item.configuration,
-      Condition: item.condition,
-      ModelNumber: item.modelNumber,
-      SerialNumber: item.serialNumber,
-      Price: `Rs ${item.price}`,
-      AMCStartDate: item.amcStartDate ? formatDate(item.amcStartDate) : '',
-      AMCEndDate: item.amcEndDate ? formatDate(item.amcEndDate) : ''
+      'Date': item.createdAt ? formatDate(item.createdAt) : '',
+      'Stock Id': item.stockId || '',
+      'Item Name': item.itemName || '',
+      'Group': item.itemPart || item.group || item.groupName || '',
+      'Configuration': item.configuration || '',
+      'Condition': item.condition || '',
+      'Model Number': item.modelNumber || '',
+      'Serial Number': item.serialNumber || '',
+      'Price': item.price !== undefined && item.price !== null ? `Rs ${item.price}` : '',
+      'Status': item.status || 'available',
+      'AMC Start Date': item.amcStartDate ? formatDate(item.amcStartDate) : '',
+      'AMC End Date': item.amcEndDate ? formatDate(item.amcEndDate) : ''
     }));
     exportToCSV(csvData, 'Current_Stock.csv');
   };
 
   useEffect(() => { if (error) toast.error(error); }, [error]);
 
-  // Filter out officeRepair and scrap on frontend like old UI
   const displayData = data;
 
   return (
@@ -64,10 +67,10 @@ const CurrentStock = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                placeholder="Search current stock..."
+                placeholder="Search stocks..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -78,11 +81,10 @@ const CurrentStock = () => {
             </Grid>
             <Grid item xs={12} md={3}>
               <TextField select fullWidth label="Condition" value={conditionFilter} onChange={(e) => setConditionFilter(e.target.value)} size="small">
-                <MenuItem value="">All</MenuItem>
+                <MenuItem value="">All Conditions</MenuItem>
                 <MenuItem value="working">Working</MenuItem>
                 <MenuItem value="faulty">Faulty</MenuItem>
                 <MenuItem value="new">New</MenuItem>
-                <MenuItem value="repaired">Repaired</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>
@@ -98,10 +100,10 @@ const CurrentStock = () => {
                 <MenuItem value="cctv">CCTV</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={2}>
               <Stack direction="row" spacing={1} justifyContent="flex-end">
                 <Button variant="outlined" startIcon={<DownloadIcon />} size="small" onClick={handleDownloadCSV}>
-                  CSV
+                  Download CSV
                 </Button>
               </Stack>
             </Grid>
@@ -112,6 +114,7 @@ const CurrentStock = () => {
       <Grid container spacing={2}>
         {displayData.map((stock, index) => {
           const isLast = displayData.length === index + 1;
+          const groupName = stock.itemPart || stock.group || stock.groupName || '';
           return (
             <Grid item xs={12} sm={6} md={4} key={stock.stockId || stock._id} ref={isLast ? lastElementRef : null}>
               <Card 
@@ -133,9 +136,11 @@ const CurrentStock = () => {
                   <Typography variant="h6" color="primary" gutterBottom>
                     {stock.itemName}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Group: {stock.itemPart}
-                  </Typography>
+                  {groupName && (
+                    <Typography variant="body2" color="text.secondary">
+                      Group: {groupName}
+                    </Typography>
+                  )}
                   <Typography variant="body2" color="text.secondary">
                     Serial: {stock.serialNumber}
                   </Typography>
@@ -185,7 +190,7 @@ const CurrentStock = () => {
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Group (Part)</Typography>
-                  <Typography variant="body1">{selectedStock.itemPart}</Typography>
+                  <Typography variant="body1">{selectedStock.itemPart || selectedStock.group || 'N/A'}</Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Serial Number</Typography>
@@ -230,6 +235,3 @@ const CurrentStock = () => {
 };
 
 export default CurrentStock;
-
-
-

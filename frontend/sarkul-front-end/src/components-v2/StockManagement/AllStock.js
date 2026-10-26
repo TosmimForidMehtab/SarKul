@@ -38,17 +38,20 @@ const AllStock = () => {
       return;
     }
     const csvData = data.map(item => ({
-      StockId: item.stockId,
-      ItemName: item.itemName,
-      Group: item.itemPart,
-      Configuration: item.configuration,
-      Condition: item.condition,
-      ModelNumber: item.modelNumber,
-      SerialNumber: item.serialNumber,
-      Price: `Rs ${item.price}`,
-      Scrap: item.scrap,
-      AMCStartDate: item.amcStartDate ? formatDate(item.amcStartDate) : '',
-      AMCEndDate: item.amcEndDate ? formatDate(item.amcEndDate) : ''
+      'Date': item.createdAt ? formatDate(item.createdAt) : '',
+      'Stock Id': item.stockId || '',
+      'Item Name': item.itemName || '',
+      'Group': item.itemPart || item.group || item.groupName || '',
+      'Configuration': item.configuration || '',
+      'Condition': item.condition || '',
+      'Model Number': item.modelNumber || '',
+      'Serial Number': item.serialNumber || '',
+      'Price': item.price !== undefined && item.price !== null ? `Rs ${item.price}` : '',
+      'Status': item.status || 'available',
+      'Office Repair': item.officeRepair || 'no',
+      'Scrap': item.scrap || 'no',
+      'AMC Start Date': item.amcStartDate ? formatDate(item.amcStartDate) : '',
+      'AMC End Date': item.amcEndDate ? formatDate(item.amcEndDate) : ''
     }));
     exportToCSV(csvData, 'All_Stock.csv');
   };
@@ -105,7 +108,7 @@ const AllStock = () => {
             <Grid item xs={12} md={2}>
               <Stack direction="row" spacing={1} justifyContent="flex-end">
                 <Button variant="outlined" startIcon={<DownloadIcon />} size="small" onClick={handleDownloadCSV}>
-                  CSV
+                  Download CSV
                 </Button>
               </Stack>
             </Grid>
@@ -116,6 +119,7 @@ const AllStock = () => {
       <Grid container spacing={2}>
         {data.map((stock, index) => {
           const isLast = data.length === index + 1;
+          const groupName = stock.itemPart || stock.group || stock.groupName || '';
           return (
             <Grid item xs={12} sm={6} md={4} key={stock.stockId || stock._id} ref={isLast ? lastElementRef : null}>
               <Card 
@@ -140,9 +144,11 @@ const AllStock = () => {
                   <Typography variant="h6" color="primary" gutterBottom>
                     {stock.itemName}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Group: {stock.itemPart}
-                  </Typography>
+                  {groupName && (
+                    <Typography variant="body2" color="text.secondary">
+                      Group: {groupName}
+                    </Typography>
+                  )}
                   <Typography variant="body2" color="text.secondary">
                     Serial: {stock.serialNumber}
                   </Typography>
@@ -177,13 +183,10 @@ const AllStock = () => {
                 Stock Details
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-                
                 <StatusBadge status={selectedStock.condition} />
                 {selectedStock.scrap === 'yes' && <StatusBadge status="scrap" />}
                 {selectedStock.officeRepair === 'yes' && <StatusBadge status="maintenance" />}
-                <Chip label={`₹${selectedStock.price}`} color="success" variant="outlined" size="small" />
               </Box>
-              
               <Stack spacing={2}>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Stock ID</Typography>
@@ -191,44 +194,36 @@ const AllStock = () => {
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Item Name</Typography>
-                  <Typography variant="body1" fontWeight="medium">{selectedStock.itemName}</Typography>
+                  <Typography variant="body1">{selectedStock.itemName}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Group (Part)</Typography>
-                  <Typography variant="body1">{selectedStock.itemPart}</Typography>
+                  <Typography variant="caption" color="text.secondary">Group (Item Part)</Typography>
+                  <Typography variant="body1">{selectedStock.itemPart || selectedStock.group || 'N/A'}</Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Serial Number</Typography>
-                  <Typography variant="body1">{selectedStock.serialNumber}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Model Number</Typography>
-                  <Typography variant="body1">{selectedStock.modelNumber}</Typography>
+                  <Typography variant="body1">{selectedStock.serialNumber || 'N/A'}</Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Configuration</Typography>
-                  <Typography variant="body1">{selectedStock.configuration}</Typography>
+                  <Typography variant="body1">{selectedStock.configuration || 'N/A'}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">AMC Start Date</Typography>
-                  <Typography variant="body1">{selectedStock.amcStartDate ? formatDate(selectedStock.amcStartDate) : 'N/A'}</Typography>
+                  <Typography variant="caption" color="text.secondary">Model</Typography>
+                  <Typography variant="body1">{selectedStock.modelNumber || 'N/A'}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">AMC End Date</Typography>
-                  <Typography variant="body1">{selectedStock.amcEndDate ? formatDate(selectedStock.amcEndDate) : 'N/A'}</Typography>
+                  <Typography variant="caption" color="text.secondary">Price</Typography>
+                  <Typography variant="body1">₹{selectedStock.price}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Added On</Typography>
-                  <Typography variant="body1">{selectedStock.createdAt ? formatDate(selectedStock.createdAt) : 'N/A'}</Typography>
+                  <Typography variant="caption" color="text.secondary">AMC / Warranty Dates</Typography>
+                  <Typography variant="body2">
+                    {formatDate(selectedStock.amcStartDate)} to {formatDate(selectedStock.amcEndDate)}
+                  </Typography>
                 </Box>
               </Stack>
-              
-              <Button 
-                variant="outlined" 
-                fullWidth 
-                sx={{ mt: 4 }}
-                onClick={() => setSelectedStock(null)}
-              >
+              <Button fullWidth variant="outlined" sx={{ mt: 4 }} onClick={() => setSelectedStock(null)}>
                 Close
               </Button>
             </>
@@ -240,6 +235,3 @@ const AllStock = () => {
 };
 
 export default AllStock;
-
-
-

@@ -82,7 +82,8 @@ const CallDetails = () => {
     try {
       await api.post('/call/assign', {
         callId: callDetails.callId,
-        engineerName: selectedEngineer.employeeName
+        engineerName: selectedEngineer.employeeName,
+        engineerCode: selectedEngineer.employeeCode
       });
       toast.success('Call assigned successfully');
       setAssignModalOpen(false);
@@ -158,6 +159,18 @@ const CallDetails = () => {
                   <Grid item xs={6}>
                     <Typography variant="subtitle2" color="text.secondary">Category</Typography>
                     <Chip label={callDetails.category} size="small" />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="subtitle2" color="text.secondary">Group</Typography>
+                    <Typography variant="body1" color="primary" fontWeight="bold">
+                      {callDetails.itemName || callDetails.group || callDetails.groupName || 'N/A'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="subtitle2" color="text.secondary">Model / Serial</Typography>
+                    <Typography variant="body2">
+                      {[callDetails.itemModelNumber, callDetails.serialNumber].filter(Boolean).join(' / ') || 'N/A'}
+                    </Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="subtitle2" color="text.secondary">Priority</Typography>
